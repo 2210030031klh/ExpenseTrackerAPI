@@ -8,8 +8,10 @@ public class Income
 
     public Guid UserId { get; set; }                     // FK → Users.UserId
 
-    public int Amount { get; set; }                      // how much was earned
-
+    public int Amount { get; set; }   
+    [MaxLength(100)]
+    public string Name { get; set; } = string.Empty;
+    
     [MaxLength(200)]                                      // VARCHAR(200) in MySQL
     public string? Description { get; set; }             // optional notes
 

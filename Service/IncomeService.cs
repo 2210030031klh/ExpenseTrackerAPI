@@ -14,6 +14,7 @@ public class IncomeService(AppDbContext context) : IIncomeService
             {
                 IncomeId = i.IncomeId,
                 UserId = i.UserId,
+                Name=i.Name,
                 Amount = i.Amount,
                 Description = i.Description,
                 Source = i.Source,
@@ -52,18 +53,20 @@ public class IncomeService(AppDbContext context) : IIncomeService
             UserId = userId,
             Amount = income.Amount,
             Description = income.Description,
+            Name = income.Name,
             Source = income.Source,
             Date = income.Date
-        };
+        };  
 
         context.Incomes.Add(newIncome);
         await context.SaveChangesAsync();
 
         return new CreateIncomeDto
         {
+            Name = newIncome.Name,
+            Source = newIncome.Source,
             Amount = newIncome.Amount,
             Description = newIncome.Description,
-            Source = newIncome.Source,
             Date = newIncome.Date
         };
     }

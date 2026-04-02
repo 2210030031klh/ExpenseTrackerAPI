@@ -9,9 +9,10 @@ public class Category
     [MaxLength(50)]                                       // VARCHAR(50) in MySQL
     public required string CategoryName { get; set; }    // e.g. Food, Transport, Gym
 
-    public Guid? UserId { get; set; }                    // FK → Users.UserId
-                                                         // NULL = system category (all users)
-                                                         // GUID = personal category (one user)
+    public Guid? UserId { get; set; }   
+
+    [MaxLength(20)]
+    public string Type { get; set; } = string.Empty; // "Expense" or "Income"
     // Relationships:
     // Category (1) → Expenses (Many)
     // Category (1) → Budgets (Many)

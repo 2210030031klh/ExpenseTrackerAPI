@@ -13,16 +13,21 @@ public class CategoryController(ICategoryService categoryService) : ControllerBa
 {
     // GET all categories for logged in user (system + personal)
     [HttpGet]
-    public async Task<ActionResult<List<GetCategoryDto>>> GetCategories()
-    {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var result = await categoryService.GetCategoriesAsync(userId);
-        return Ok(result);
-    }
+[HttpGet]
+public async Task<ActionResult<List<GetCategoryDto>>> GetCategories([FromQuery] string? type)
+{
+    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+    if (!Guid.TryParse(userIdClaim, out var userId))
+        return Unauthorized("Invalid user.");
+
+    var categories = await categoryService.GetCategoriesAsync(userId, type);
+    return Ok(categories);
+}
 
     // POST create personal category
     [HttpPost]
-    public async Task<ActionResult<GetCategoryDto>> CreateCategory(CreateCategoryDto dto)
+    public async Task<ActionResult<GetCategoryDto>> CreateCategory(CreateCategoryDto dto )
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var result = await categoryService.CreateCategoryAsync(dto, userId);

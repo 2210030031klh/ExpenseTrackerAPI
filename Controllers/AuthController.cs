@@ -14,31 +14,45 @@ public class AuthController(IAuthService authService) : ControllerBase
     [HttpPost("register")]
     public async Task<ActionResult <User>> Register(UserDto Request)
     {
-        var user=await authService.RegisterAsync(Request);
-        if(user is null)
-            return BadRequest("Username already exists.");
-        return Ok(user);
+        try{
+            var user=await authService.RegisterAsync(Request);
+            return Ok(user);
+            }
+        catch (Exception ex)
+        {
+            return BadRequest(new{message=ex.Message});
+        }
     }
 
 
 
     [HttpPost("login")]
-    public async Task<ActionResult<TokenResponseDto>> Login(LoginDto Request)
+    public async Task<ActionResult<bool>> Login(LoginDto Request)
     {
         var result=await authService.LoginAsync(Request);
-        if(result is null) 
-            return BadRequest("Invalid username or password.");
-        return Ok(result);
+        if(result is false) 
+            return Unauthorized("Invalid username or password.");
+            
+        return Ok(new{message="OTP sent to registered email"});
+    }
+
+    [HttpPost("Verify-otp")]
+    public async Task<IActionResult> VerifyOtp(VerifyOtpDto request)
+    {
+        var result=await authService.VerifyOtpAsync(request);
+        if(result ==null)
+            return BadRequest("Invalis or Expirred Otp");
+            return Ok(result);
     }
 
 
     // [Authorize]
-    [HttpGet]
-    public IActionResult AuthenticatedOnlyEndpoint()
-    {
-        return Ok("You are authenticated!");
+    // [HttpGet]
+    // public IActionResult AuthenticatedOnlyEndpoint()
+    // {
+    //     return Ok("You are authenticated!");
         
-    }
+    // }
 
     [Authorize(Roles = "Accountant")]
     [HttpGet("Admin-Only")]
@@ -46,17 +60,18 @@ public class AuthController(IAuthService authService) : ControllerBase
     {
         return Ok("You are an admin!");
     }
+
     
-    [HttpPost("refresh-token")]
-    public async Task<ActionResult<TokenResponseDto>> RefreshToken(RefreshTokenRequestDto request)
-    {
-        var result = await authService.RefreshTokenAsync(request);
-        if (result is null || result.AccessToken == null || result.RefreshToken == null)
-        {
-            return Unauthorized("Invalid refresh token.")   ;
-        }
-        return Ok(result);
-    }
+    // [HttpPost("refresh-token")]
+    // public async Task<ActionResult<TokenResponseDto>> RefreshToken(RefreshTokenRequestDto request)
+    // {
+    //     var result = await authService.RefreshTokenAsync(request);
+    //     if (result is null || result.AccessToken == null || result.RefreshToken == null)
+    //     {
+    //         return Unauthorized("Invalid refresh token.")   ;
+    //     }
+    //     return Ok(result);
+    // }
 
     // private string CreateToken(User user)
     // {

@@ -22,6 +22,9 @@ public class User
     public string? RefreshToken { get; set; }            // JWT refresh token
 
     public DateTime? RefreshTokenExpiryTime { get; set; } // refresh token expiry
+
+    public string? Otp {get ; set; }
+    public DateTime?OtpExpiryTime{get; set;}
     public DateOnly CreatedAt { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow); // auto set
 
     // Relationships:

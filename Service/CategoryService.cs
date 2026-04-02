@@ -7,24 +7,44 @@ using ShashiControllerAPI.Models;
 public class CategoryService(AppDbContext context) : ICategoryService
 {
     // Get system categories + user's personal categories
-    public async Task<List<GetCategoryDto>> GetCategoriesAsync(Guid userId)
-        => await context.Categories
-            .Where(c => c.UserId == null || c.UserId == userId)
-            .Select(c => new GetCategoryDto
-            {
-                CategoryId = c.CategoryId,
-                CategoryName = c.CategoryName,
-                IsPersonal = c.UserId != null
-            })
-            .ToListAsync();
+public async Task<List<GetCategoryDto>> GetCategoriesAsync(Guid userId, string? type = null)
+{
+    var query = context.Categories
+        .Where(c => c.UserId == null || c.UserId == userId);
 
-    // Create personal category
+    if (!string.IsNullOrWhiteSpace(type))
+    {
+        query = query.Where(c => c.Type == type);
+    }
+
+    return await query
+        .Select(c => new GetCategoryDto
+        {
+            CategoryId = c.CategoryId,
+            CategoryName = c.CategoryName,
+            IsPersonal = c.UserId != null
+        })
+        .ToListAsync();
+}
+
+   // Create personal category
     public async Task<GetCategoryDto> CreateCategoryAsync(CreateCategoryDto dto, Guid userId)
     {
+        if (dto is null)
+            throw new ArgumentNullException(nameof(dto));
+
+        if (userId == Guid.Empty)
+            throw new ArgumentException("Invalid user id.");
+
+        if (string.IsNullOrWhiteSpace(dto.CategoryName))
+            throw new ArgumentException("Category name is required.");
+
+        var categoryName = dto.CategoryName.Trim();
         var category = new Category
         {
-            CategoryName = dto.CategoryName,
-            UserId = userId  // belongs to this user
+            CategoryName = categoryName,
+            Type = dto.Type,
+            UserId = userId
         };
 
         context.Categories.Add(category);
@@ -37,7 +57,6 @@ public class CategoryService(AppDbContext context) : ICategoryService
             IsPersonal = true
         };
     }
-
     // Delete only if it belongs to the user
     public async Task<bool> DeleteCategoryAsync(int id, Guid userId)
     {

@@ -14,6 +14,7 @@ public class BudgetService(AppDbContext context) : IBudgetService
             .Select(b => new GetBudgetDto
             {
                 BudgetId = b.BudgetId,
+                CategoryId = b.CategoryId,
                 CategoryName = b.Category.CategoryName,
                 Amount = b.Amount,
                 Month = b.Month,

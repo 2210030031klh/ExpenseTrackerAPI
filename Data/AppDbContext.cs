@@ -12,17 +12,25 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Budget> Budgets { get; set; }
     public DbSet<Income> Incomes { get; set; }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Seed system-wide categories (UserId = null means available to ALL users)
         modelBuilder.Entity<Category>().HasData(
-            new Category { CategoryId = 1, CategoryName = "Food" },
-            new Category { CategoryId = 2, CategoryName = "Transport" },
-            new Category { CategoryId = 3, CategoryName = "Shopping" },
-            new Category { CategoryId = 4, CategoryName = "Bills" },
-            new Category { CategoryId = 5, CategoryName = "Health" },
-            new Category { CategoryId = 6, CategoryName = "Entertainment" },
-            new Category { CategoryId = 7, CategoryName = "Other" }
+
+            // 🔴 Expense Categories
+            new Category { CategoryId = 1, CategoryName = "Food", Type = "Expense" },
+            new Category { CategoryId = 2, CategoryName = "Transport", Type = "Expense" },
+            new Category { CategoryId = 3, CategoryName = "Shopping", Type = "Expense" },
+            new Category { CategoryId = 4, CategoryName = "Bills", Type = "Expense" },
+            new Category { CategoryId = 5, CategoryName = "Health", Type = "Expense" },
+            new Category { CategoryId = 6, CategoryName = "Entertainment", Type = "Expense" },
+            new Category { CategoryId = 7, CategoryName = "Loans", Type = "Expense" },
+
+            // 🟢 Income Categories
+            new Category { CategoryId = 8, CategoryName = "Salary", Type = "Income" },
+            new Category { CategoryId = 9, CategoryName = "Freelance", Type = "Income" },
+            new Category { CategoryId = 10, CategoryName = "Business", Type = "Income" },
+            new Category { CategoryId = 11, CategoryName = "Trading", Type = "Income" },
+            new Category { CategoryId = 12, CategoryName = "Investment", Type = "Income" }
         );
     }
     

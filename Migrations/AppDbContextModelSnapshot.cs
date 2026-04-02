@@ -68,6 +68,11 @@ namespace ShashiControllerAPI.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
 
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
                     b.Property<Guid?>("UserId")
                         .HasColumnType("char(36)");
 
@@ -79,37 +84,74 @@ namespace ShashiControllerAPI.Migrations
                         new
                         {
                             CategoryId = 1,
-                            CategoryName = "Food"
+                            CategoryName = "Food",
+                            Type = "Expense"
                         },
                         new
                         {
                             CategoryId = 2,
-                            CategoryName = "Transport"
+                            CategoryName = "Transport",
+                            Type = "Expense"
                         },
                         new
                         {
                             CategoryId = 3,
-                            CategoryName = "Shopping"
+                            CategoryName = "Shopping",
+                            Type = "Expense"
                         },
                         new
                         {
                             CategoryId = 4,
-                            CategoryName = "Bills"
+                            CategoryName = "Bills",
+                            Type = "Expense"
                         },
                         new
                         {
                             CategoryId = 5,
-                            CategoryName = "Health"
+                            CategoryName = "Health",
+                            Type = "Expense"
                         },
                         new
                         {
                             CategoryId = 6,
-                            CategoryName = "Entertainment"
+                            CategoryName = "Entertainment",
+                            Type = "Expense"
                         },
                         new
                         {
                             CategoryId = 7,
-                            CategoryName = "Other"
+                            CategoryName = "Loans",
+                            Type = "Expense"
+                        },
+                        new
+                        {
+                            CategoryId = 8,
+                            CategoryName = "Salary",
+                            Type = "Income"
+                        },
+                        new
+                        {
+                            CategoryId = 9,
+                            CategoryName = "Freelance",
+                            Type = "Income"
+                        },
+                        new
+                        {
+                            CategoryId = 10,
+                            CategoryName = "Business",
+                            Type = "Income"
+                        },
+                        new
+                        {
+                            CategoryId = 11,
+                            CategoryName = "Trading",
+                            Type = "Income"
+                        },
+                        new
+                        {
+                            CategoryId = 12,
+                            CategoryName = "Investment",
+                            Type = "Income"
                         });
                 });
 
@@ -169,6 +211,11 @@ namespace ShashiControllerAPI.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
 
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
                     b.Property<string>("Source")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -197,6 +244,12 @@ namespace ShashiControllerAPI.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Otp")
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("OtpExpiryTime")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()

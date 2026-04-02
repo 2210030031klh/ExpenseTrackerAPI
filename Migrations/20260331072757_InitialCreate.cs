@@ -25,7 +25,9 @@ namespace ShashiControllerAPI.Migrations
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     CategoryName = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    UserId = table.Column<Guid>(type: "char(36)", nullable: true, collation: "ascii_general_ci")
+                    UserId = table.Column<Guid>(type: "char(36)", nullable: true, collation: "ascii_general_ci"),
+                    Type = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4")
                 },
                 constraints: table =>
                 {
@@ -49,6 +51,9 @@ namespace ShashiControllerAPI.Migrations
                     RefreshToken = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     RefreshTokenExpiryTime = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    Otp = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    OtpExpiryTime = table.Column<DateTime>(type: "datetime(6)", nullable: true),
                     CreatedAt = table.Column<DateOnly>(type: "date", nullable: false)
                 },
                 constraints: table =>
@@ -121,6 +126,8 @@ namespace ShashiControllerAPI.Migrations
                     IncomeId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     UserId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     Amount = table.Column<int>(type: "int", nullable: false),
+                    Name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
                     Description = table.Column<string>(type: "varchar(200)", maxLength: 200, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Source = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
@@ -142,16 +149,21 @@ namespace ShashiControllerAPI.Migrations
 
             migrationBuilder.InsertData(
                 table: "Categories",
-                columns: new[] { "CategoryId", "CategoryName", "UserId" },
+                columns: new[] { "CategoryId", "CategoryName", "Type", "UserId" },
                 values: new object[,]
                 {
-                    { 1, "Food", null },
-                    { 2, "Transport", null },
-                    { 3, "Shopping", null },
-                    { 4, "Bills", null },
-                    { 5, "Health", null },
-                    { 6, "Entertainment", null },
-                    { 7, "Other", null }
+                    { 1, "Food", "Expense", null },
+                    { 2, "Transport", "Expense", null },
+                    { 3, "Shopping", "Expense", null },
+                    { 4, "Bills", "Expense", null },
+                    { 5, "Health", "Expense", null },
+                    { 6, "Entertainment", "Expense", null },
+                    { 7, "Loans", "Expense", null },
+                    { 8, "Salary", "Income", null },
+                    { 9, "Freelance", "Income", null },
+                    { 10, "Business", "Income", null },
+                    { 11, "Trading", "Income", null },
+                    { 12, "Investment", "Income", null }
                 });
 
             migrationBuilder.CreateIndex(

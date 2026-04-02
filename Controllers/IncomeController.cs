@@ -12,6 +12,7 @@ namespace ShashiControllerAPI.Controllers;
 public class IncomeController(IIncomeService incomeService) : ControllerBase
 {
     // GET all incomes for logged in user
+    //write a function for total income or credit
     [HttpGet]
     public async Task<ActionResult<List<GetIncomeDto>>> GetAllIncomes()
     {

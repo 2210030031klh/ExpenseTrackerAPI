@@ -8,6 +8,7 @@ using ShashiControllerAPI.Service;
 
 namespace ShashiControllerAPI.Controllers;
 
+
 [Route("api/[Controller]")]
 [ApiController]
 public class ExpenseController (IExpenseService expenseService): ControllerBase
@@ -42,13 +43,11 @@ public class ExpenseController (IExpenseService expenseService): ControllerBase
 
     // 4️⃣ Add a new expense
     [HttpPost]
-    // [Authorize]
     public async Task<ActionResult<Expense>> AddExpense(CreateExpenseDto expense)
     {
-        // var added = await expenseService.AddExpenseAsync(expense); 
-        // return CreatedAtAction(nameof(AddExpense), new { id = added.Id }, added);
         if (expense.Amount <= 0)
-            return BadRequest("Amount must be greater than 0.");
+            return BadRequest(new { message = "Amount must be greater than 0." });
+
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         try{
             var added = await expenseService.AddExpenseAsync(expense, userId);
@@ -56,19 +55,31 @@ public class ExpenseController (IExpenseService expenseService): ControllerBase
         }
         catch(ArgumentException ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new{message=ex.Message});
         }
     }
 
     // 5️⃣ Update an existing expense
-    [HttpPut("{id}")]
-    public async Task<ActionResult> UpdateExpenseAsync(Guid id,  UpdateExpenseDto expense)
+[HttpPut("{id}")]
+public async Task<ActionResult> UpdateExpenseAsync(Guid id, UpdateExpenseDto expense)
+{
+    if (string.IsNullOrWhiteSpace(expense.Name) || expense.Name.Length < 2)
+        return BadRequest(new { message = "Expense name must be at least 2 characters long." });
+    if (expense.Amount <= 0)
+        return BadRequest(new { message = "Amount must be greater than 0." });
+    var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    try
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var updated = await expenseService.UpdateExpenseAsync(id, expense, userId);
-        return updated ? NoContent() : NotFound($"Expense with ID {id} not found.");
+        if (!updated)
+            return NotFound(new { message = $"Expense with ID {id} not found." });
+        return NoContent();
     }
-
+    catch (ArgumentException ex)
+    {
+        return BadRequest(new { message = ex.Message });
+    }
+}
     // 6️⃣ Delete an expense
     [HttpDelete("{id}")]
     public async Task<ActionResult> DeleteExpenseAsync(Guid id)
