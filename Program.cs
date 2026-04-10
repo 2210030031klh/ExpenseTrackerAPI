@@ -42,6 +42,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IIncomeService, IncomeService>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReact",policy =>

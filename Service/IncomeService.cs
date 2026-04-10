@@ -96,4 +96,76 @@ public class IncomeService(AppDbContext context) : IIncomeService
         await context.SaveChangesAsync();
         return true;
     }
+
+    public async Task<List<GetIncomeDto>> GetIncomesBySourceAsync(string source, Guid userId)
+    => await context.Incomes
+        .Where(i => i.UserId == userId && i.Source == source)
+        .Select(i => new GetIncomeDto
+        {
+            Name=i.Name,
+            IncomeId = i.IncomeId,
+            UserId = i.UserId,
+            Amount = i.Amount,
+            Description = i.Description,
+            Source = i.Source,
+            Date = i.Date,
+            CreatedAt = i.CreatedAt
+        })
+        .ToListAsync();
+
+    public async Task<List<GetIncomeDto>> GetIncomesByDateRangeAsync(DateOnly startDate, DateOnly endDate, Guid userId)
+    => await context.Incomes
+        .Where(i => i.UserId == userId && i.Date >= startDate && i.Date <= endDate)
+        .Select(i => new GetIncomeDto
+        {
+            IncomeId = i.IncomeId,
+            UserId = i.UserId,
+            Amount = i.Amount,
+            Description = i.Description,
+            Source = i.Source,
+            Date = i.Date,
+            CreatedAt = i.CreatedAt
+        })
+        .ToListAsync();
+
+    public async Task<List<GetIncomeSourceReportDto>> GetSourceReportAsync(Guid userId)
+    => await context.Incomes
+        .Where(i => i.UserId == userId)
+        .GroupBy(i => i.Source)
+        .Select(g => new GetIncomeSourceReportDto
+        {
+            Source = g.Key,
+            TotalAmount = g.Sum(i => i.Amount)
+        })
+        .ToListAsync();
+
+    
+    public async Task<IncomeSummaryDto> GetIncomeSummaryAsync(Guid userId)
+    {
+    if (userId == Guid.Empty)
+        throw new ArgumentException("Invalid user ID.");
+
+    var incomes = await context.Incomes
+        .Where(i => i.UserId == userId)
+        .ToListAsync();
+
+    var totalAmount = incomes.Sum(i => i.Amount);
+    var totalTransactions = incomes.Count;
+
+    var today = DateTime.Now;
+
+    var thisMonthTransactions = incomes.Count(i =>
+        i.Date.Month == today.Month && i.Date.Year == today.Year
+    );
+
+    return new IncomeSummaryDto
+    {
+        TotalAmount = totalAmount,
+        TotalTransactions = totalTransactions,
+        ThisMonthTransactions = thisMonthTransactions,
+        AverageAmount = totalTransactions > 0
+            ? (double)totalAmount / totalTransactions
+            : 0
+    };
+}
 }

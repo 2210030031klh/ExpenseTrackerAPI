@@ -1,14 +1,6 @@
-// namespace ShashiControllerAPI.DTOs;
-
-// public class CreateCategoryDto
-// {
-//     public required string CategoryName { get; set; }
-// }
-
 using System.ComponentModel.DataAnnotations;
 
 namespace ShashiControllerAPI.DTOs;
-
 public class CreateCategoryDto
 {
     [Required(ErrorMessage = "Category name is required.")]
@@ -18,4 +10,13 @@ public class CreateCategoryDto
 
     [Required]
     public string Type { get; set; } = string.Empty;
+}
+
+
+public class GetCategoryDto
+{
+    public int CategoryId { get; set; }
+    public string CategoryName { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty; // "Expense" or "Income"
+    public bool IsPersonal { get; set; }  // true if personal, false if system
 }

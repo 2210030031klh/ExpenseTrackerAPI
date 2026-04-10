@@ -7,12 +7,18 @@ using ShashiControllerAPI.Models;
 public class ExpenseService (AppDbContext context): IExpenseService
 {
     //check if which user is logged in and then return the expenses of that user only
-    public async Task<List<GetExpenseDto>> GetAllExpensesAsync(Guid userId)
+    public async Task<PagedResultDto<GetExpenseDto>> GetAllExpensesAsync(Guid userId, int pageNumber, int pageSize)
     {
         if (userId == Guid.Empty)
             throw new ArgumentException("Invalid user ID.");
 
-        return await context.Expenses
+        if (pageNumber <= 0)
+            pageNumber = 1;
+
+        if (pageSize <= 0)
+            pageSize = 10;
+
+        var query = context.Expenses
             .AsNoTracking()
             .Where(e => e.UserId == userId)
             .Include(e => e.Category)
@@ -27,18 +33,44 @@ public class ExpenseService (AppDbContext context): IExpenseService
                 Description = e.Description,
                 Date = e.Date,
                 CreatedAt = e.CreatedAt
-            })
+            });
+
+        var totalRecords = await query.CountAsync();
+
+        var items = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
+
+        return new PagedResultDto<GetExpenseDto>
+        {
+            Items = items,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalRecords = totalRecords,
+            TotalPages = (int)Math.Ceiling(totalRecords / (double)pageSize)
+        };
     }
     
-   
-    public async Task<List<GetExpenseDto>> GetExpensesByCategoryAsync(string category, Guid userId)
+    public async Task<PagedResultDto<GetExpenseDto>> GetExpensesByCategoryAsync(string category, Guid userId, int pageNumber, int pageSize)
     {
         if (userId == Guid.Empty)
             throw new ArgumentException("Invalid user ID.");
-        return await context.Expenses
+
+        if (string.IsNullOrWhiteSpace(category))
+            throw new ArgumentException("Category is required.");
+
+        if (pageNumber <= 0)
+            pageNumber = 1;
+
+        if (pageSize <= 0)
+            pageSize = 10;
+
+        var query = context.Expenses
+            .AsNoTracking()
+            .Where(e => e.UserId == userId && e.Category.CategoryName == category)
             .Include(e => e.Category)
-            .Where(e => e.UserId == userId && string.Equals(e.Category.CategoryName, category, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(e => e.Date)
             .Select(e => new GetExpenseDto
             {
                 ExpenseId = e.ExpenseId,
@@ -49,17 +81,29 @@ public class ExpenseService (AppDbContext context): IExpenseService
                 Description = e.Description,
                 Date = e.Date,
                 CreatedAt = e.CreatedAt
-            })
+            });
+
+        var totalRecords = await query.CountAsync();
+
+        var items = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
+
+        return new PagedResultDto<GetExpenseDto>
+        {
+            Items = items,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalRecords = totalRecords,
+            TotalPages = (int)Math.Ceiling(totalRecords / (double)pageSize)
+        };
     }
 
     public async Task<CreateExpenseDto> AddExpenseAsync(CreateExpenseDto expense, Guid userId)
     {
         if (expense == null)
             throw new ArgumentNullException(nameof(expense), "Expense data is required.");
-
-        if (userId == Guid.Empty)
-            throw new ArgumentException("Invalid user ID.");
 
         var userExists = await context.Users.AnyAsync(u => u.UserId == userId);
         if (!userExists)
@@ -367,18 +411,24 @@ public class ExpenseService (AppDbContext context): IExpenseService
     {
         if (userId == Guid.Empty)
             throw new ArgumentException("Invalid user ID.");
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
         var result = await context.Expenses
-        .Include(e => e.Category)
-        .Where(e => e.UserId == userId)
-        .GroupBy(e => e.Category.CategoryName)
-        .Select(g => new CategoryReportDto
-        {
-            CategoryName = g.Key,
-            TotalAmount = g.Sum(e => e.Amount),
-            TotalExpenses = g.Count()
-        })
-        .OrderByDescending(r => r.TotalAmount)
-        .ToListAsync();
+            .Include(e => e.Category)
+            .Where(e => e.UserId == userId &&
+                        e.Date.Year == today.Year &&
+                        e.Date.Month == today.Month)
+            .GroupBy(e => e.Category.CategoryName)
+            .Select(g => new CategoryReportDto
+            {
+                CategoryName = g.Key,
+                TotalAmount = g.Sum(e => e.Amount),
+                TotalExpenses = g.Count()
+            })
+            .OrderByDescending(r => r.TotalAmount)
+            .ToListAsync();
+
         return result;
     }
     public async Task<List<GetExpenseDto>> GetAllUsersExpensesAsync()
@@ -399,4 +449,32 @@ public class ExpenseService (AppDbContext context): IExpenseService
 
         return result;
     }
+
+    public async Task<ExpenseSummaryDto> GetExpenseSummaryAsync(Guid userId)
+{
+    if (userId == Guid.Empty)
+        throw new ArgumentException("Invalid user ID.");
+
+    var expenses = await context.Expenses
+        .Where(e => e.UserId == userId)
+        .ToListAsync();
+
+    var totalAmount = expenses.Sum(e => e.Amount);
+    var totalTransactions = expenses.Count;
+
+    var today = DateTime.Now;
+    var thisMonthTransactions = expenses.Count(e =>
+        e.Date.Month == today.Month && e.Date.Year == today.Year
+    );
+
+    return new ExpenseSummaryDto
+    {
+        TotalAmount = totalAmount,
+        TotalTransactions = totalTransactions,
+        ThisMonthTransactions = thisMonthTransactions,
+        AverageAmount = totalTransactions > 0
+            ? (double)totalAmount / totalTransactions
+            : 0
+    };
+}
 }

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ShashiControllerAPI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+411e4454fd4b64b2ef0713890087da2d2cfdcb56")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+aa20110d50186b8e010a36a52766ce23de818bf2")]
 [assembly: System.Reflection.AssemblyProductAttribute("ShashiControllerAPI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ShashiControllerAPI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

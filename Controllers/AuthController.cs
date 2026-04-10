@@ -10,7 +10,6 @@ namespace ShashiControllerAPI.Controllers;
 [ApiController]
 public class AuthController(IAuthService authService) : ControllerBase
 {
-    // public static User user =new();
     [HttpPost("register")]
     public async Task<ActionResult <User>> Register(UserDto Request)
     {
@@ -23,8 +22,6 @@ public class AuthController(IAuthService authService) : ControllerBase
             return BadRequest(new{message=ex.Message});
         }
     }
-
-
 
     [HttpPost("login")]
     public async Task<ActionResult<bool>> Login(LoginDto Request)
@@ -45,56 +42,10 @@ public class AuthController(IAuthService authService) : ControllerBase
             return Ok(result);
     }
 
-
-    // [Authorize]
-    // [HttpGet]
-    // public IActionResult AuthenticatedOnlyEndpoint()
-    // {
-    //     return Ok("You are authenticated!");
-        
-    // }
-
     [Authorize(Roles = "Accountant")]
     [HttpGet("Admin-Only")]
     public IActionResult AdminOnlyEndpoint()
     {
         return Ok("You are an admin!");
     }
-
-    
-    // [HttpPost("refresh-token")]
-    // public async Task<ActionResult<TokenResponseDto>> RefreshToken(RefreshTokenRequestDto request)
-    // {
-    //     var result = await authService.RefreshTokenAsync(request);
-    //     if (result is null || result.AccessToken == null || result.RefreshToken == null)
-    //     {
-    //         return Unauthorized("Invalid refresh token.")   ;
-    //     }
-    //     return Ok(result);
-    // }
-
-    // private string CreateToken(User user)
-    // {
-    //     // Implementation for token creation logic
-    //     var claims= new List<Claim>
-    //     {
-    //         new Claim(ClaimTypes.Name,user.Username)
-    //     };
-    //     var key = new SymmetricSecurityKey(
-    //         Encoding.UTF8.GetBytes(configuration.GetValue<string>("AppSettings:Token")!));
-    //     var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512);
-
-    //     var tokenDescriptor = new JwtSecurityToken(
-    //         issuer: configuration.GetValue<string>("AppSettings:Issuer"),
-    //         audience: configuration.GetValue<string>("AppSettings:Audience"),
-    //         claims: claims,
-    //         expires: DateTime.UtcNow.AddDays(1),
-    //         signingCredentials: creds
-    //     );
-    //     return new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
-
-        
-    // }
-
-
 }

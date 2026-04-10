@@ -6,63 +6,108 @@ using ShashiControllerAPI.Service;
 
 namespace ShashiControllerAPI.Controllers;
 
-[Route("api/[controller]")]
 [ApiController]
-// [Authorize]
+[Route("api/[controller]")]
+[Authorize]
 public class IncomeController(IIncomeService incomeService) : ControllerBase
 {
-    // GET all incomes for logged in user
-    //write a function for total income or credit
+    private Guid GetUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userIdClaim))
+            throw new UnauthorizedAccessException("User ID not found in token.");
+
+        return Guid.Parse(userIdClaim);
+    }
+
     [HttpGet]
     public async Task<ActionResult<List<GetIncomeDto>>> GetAllIncomes()
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var result = await incomeService.GetAllIncomesAsync(userId);
-        return result.Count is 0 ? NotFound("No incomes found.") : Ok(result);
+        var userId = GetUserId();
+        var incomes = await incomeService.GetAllIncomesAsync(userId);
+        return Ok(incomes);
     }
 
-    // GET income by id
-    [HttpGet("{incomeId}")]
-    public async Task<ActionResult<GetIncomeDto>> GetIncomeById(Guid incomeId)
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<GetIncomeDto>> GetIncomeById(Guid id)
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var result = await incomeService.GetIncomeByIdAsync(incomeId, userId);
-        return result is null ? NotFound("Income not found.") : Ok(result);
+        var userId = GetUserId();
+        var income = await incomeService.GetIncomeByIdAsync(id, userId);
+
+        if (income is null)
+            return NotFound("Income not found");
+
+        return Ok(income);
     }
 
-    // POST add new income
     [HttpPost]
     public async Task<ActionResult<CreateIncomeDto>> AddIncome(CreateIncomeDto income)
     {
-        if (income.Amount <= 0)
-            return BadRequest("Amount must be greater than 0.");
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        try
-        {
-            var added = await incomeService.AddIncomeAsync(income, userId);
-            return Ok(added);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        var userId = GetUserId();
+        var created = await incomeService.AddIncomeAsync(income, userId);
+        return Ok(created);
     }
 
-    // PUT update income
-    [HttpPut("{id}")]
-    public async Task<ActionResult> UpdateIncome(Guid id, UpdateIncomeDto income)
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> UpdateIncome(Guid id, UpdateIncomeDto income)
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var userId = GetUserId();
         var updated = await incomeService.UpdateIncomeAsync(id, income, userId);
-        return updated ? NoContent() : NotFound($"Income with ID {id} not found.");
+
+        if (!updated)
+            return NotFound("Income not found");
+
+        return Ok("Income updated successfully");
     }
 
-    // DELETE income
-    [HttpDelete("{id}")]
-    public async Task<ActionResult> DeleteIncome(Guid id)
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteIncome(Guid id)
+    {
+        var userId = GetUserId();
+        var deleted = await incomeService.DeleteIncomeAsync(id, userId);
+
+        if (!deleted)
+            return NotFound("Income not found");
+
+        return Ok("Income deleted successfully");
+    }
+
+    [HttpGet("source/{source}")]
+    public async Task<ActionResult<List<GetIncomeDto>>> GetBySource(string source)
+    {
+        var userId = GetUserId();
+        var incomes = await incomeService.GetIncomesBySourceAsync(source, userId);
+        return Ok(incomes);
+    }
+
+    [HttpGet("ByDateRange")]
+    public async Task<ActionResult<List<GetIncomeDto>>> GetByDateRange(
+        [FromQuery] DateOnly startDate,
+        [FromQuery] DateOnly endDate)
+    {
+        var userId = GetUserId();
+
+        if (startDate > endDate)
+            return BadRequest("Start date cannot be greater than end date.");
+
+        var incomes = await incomeService.GetIncomesByDateRangeAsync(startDate, endDate, userId);
+        return Ok(incomes);
+    }
+
+    [HttpGet("report/source")]
+    public async Task<ActionResult<List<GetIncomeSourceReportDto>>> GetSourceReport()
+    {
+        var userId = GetUserId();
+        var report = await incomeService.GetSourceReportAsync(userId);
+        return Ok(report);
+    }
+
+    [HttpGet("summary")]
+    public async Task<ActionResult<IncomeSummaryDto>> GetIncomeSummary()
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var deleted = await incomeService.DeleteIncomeAsync(id, userId);
-        return deleted ? NoContent() : NotFound($"Income with ID {id} not found.");
+        var result = await incomeService.GetIncomeSummaryAsync(userId);
+        return Ok(result);
     }
 }

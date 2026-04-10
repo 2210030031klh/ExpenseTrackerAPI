@@ -55,7 +55,7 @@ public class BudgetController(IBudgetService budgetService) : ControllerBase
         return deleted ? NoContent() : NotFound($"Budget with ID {id} not found.");
     }
 
-    // GET budget report for specific month and year
+    // dashboard
     [HttpGet("report")]
     public async Task<ActionResult<List<BudgetReportDto>>> GetBudgetReport(
         [FromQuery] int month,

@@ -11,19 +11,18 @@ namespace ShashiControllerAPI.Controllers;
 [Authorize]
 public class CategoryController(ICategoryService categoryService) : ControllerBase
 {
-    // GET all categories for logged in user (system + personal)
+        // GET all categories for logged in user (system + personal)
     [HttpGet]
-[HttpGet]
-public async Task<ActionResult<List<GetCategoryDto>>> GetCategories([FromQuery] string? type)
-{
-    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    public async Task<ActionResult<List<GetCategoryDto>>> GetCategories([FromQuery] string? type)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-    if (!Guid.TryParse(userIdClaim, out var userId))
-        return Unauthorized("Invalid user.");
+        if (!Guid.TryParse(userIdClaim, out var userId))
+            return Unauthorized("Invalid user.");
 
-    var categories = await categoryService.GetCategoriesAsync(userId, type);
-    return Ok(categories);
-}
+        var categories = await categoryService.GetCategoriesAsync(userId, type);
+        return Ok(categories);
+    }
 
     // POST create personal category
     [HttpPost]

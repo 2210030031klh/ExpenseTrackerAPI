@@ -5,11 +5,11 @@ namespace ShashiControllerAPI.Service;
 
 public interface IExpenseService
 {
-    Task<List<GetExpenseDto>> GetAllExpensesAsync(Guid userId);
+    Task<PagedResultDto<GetExpenseDto>> GetAllExpensesAsync(Guid userId, int pageNumber, int pageSize);
 
     Task<GetExpenseDto?> GetExpensesByIdAsync(Guid id, Guid userId);
 
-    Task<List<GetExpenseDto>> GetExpensesByCategoryAsync(string category, Guid userId);
+    Task<PagedResultDto<GetExpenseDto>> GetExpensesByCategoryAsync(string category, Guid userId, int pageNumber, int pageSize);
 
     Task<CreateExpenseDto> AddExpenseAsync(CreateExpenseDto expense, Guid userId);
 
@@ -25,5 +25,7 @@ public interface IExpenseService
 
     Task<List<GetExpenseDto>> GetAllUsersExpensesAsync();
 
+    
+    Task<ExpenseSummaryDto> GetExpenseSummaryAsync(Guid userId);
 
 }

@@ -81,7 +81,6 @@ public class BudgetService(AppDbContext context) : IBudgetService
         await context.SaveChangesAsync();
         return true;
     }
-
     public async Task<List<BudgetReportDto>> GetBudgetReportAsync(Guid userId, int month, int year)
     {
         var budgets = await context.Budgets
