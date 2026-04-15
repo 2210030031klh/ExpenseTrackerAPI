@@ -1,7 +1,7 @@
-using ShashiControllerAPI.DTOs;
-using ShashiControllerAPI.Models;
+using ExpenseApi.DTOs;
+using ExpenseApi.Models;
 
-namespace ShashiControllerAPI.Service;
+namespace ExpenseApi.Service;
 
 public interface IExpenseService
 {
@@ -27,5 +27,8 @@ public interface IExpenseService
 
     
     Task<ExpenseSummaryDto> GetExpenseSummaryAsync(Guid userId);
+
+    Task<byte[]> ExportExpensesToExcelAsync(Guid userId);
+
 
 }

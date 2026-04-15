@@ -1,23 +1,15 @@
-using Microsoft.EntityFrameworkCore;
-using ShashiControllerAPI.Data;
-using ShashiControllerAPI.DTOs;
-using Microsoft.AspNetCore.Mvc;
-using ShashiControllerAPI.Service;
+using ExpenseApi.DTOs;
+using ExpenseApi.Repository;
 
-namespace ShashiControllerAPI.Service;
+namespace ExpenseApi.Service;
 
-public class UserService(AppDbContext context) : IUserService
+public class UserService(IUserRepository userRepository) : IUserService
 {
     public async Task<UserProfileDto?> GetUserByIdAsync(Guid userId)
     {
-        return await context.Users
-            .Where(u => u.UserId == userId)
-            .Select(u => new UserProfileDto
-            {
-                Username = u.Username,
-                Email = u.Email,
-                Role = u.Role
-            })
-            .FirstOrDefaultAsync();
+        if (userId == Guid.Empty)
+            throw new ArgumentException("Invalid user id.");
+
+        return await userRepository.GetUserByIdAsync(userId);
     }
 }

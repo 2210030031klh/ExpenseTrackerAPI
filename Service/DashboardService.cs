@@ -1,53 +1,32 @@
-using Microsoft.EntityFrameworkCore;
-using ShashiControllerAPI.Data;
-using ShashiControllerAPI.DTOs;
+using ExpenseApi.DTOs;
+using ExpenseApi.Repository;
 
-namespace ShashiControllerAPI.Service
+namespace ExpenseApi.Service;
+
+public class DashboardService(IDashboardRepository dashboardRepository) : IDashboardService
 {
-    public class DashboardService : IDashboardService
+    public async Task<DashboardSummaryDto> GetDashboardSummaryAsync(Guid userId)
     {
-        private readonly AppDbContext _context;
+        if (userId == Guid.Empty)
+            throw new ArgumentException("Invalid user id.");
 
-        public DashboardService(AppDbContext context)
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var currentMonth = today.Month;
+        var currentYear = today.Year;
+
+        var totalIncome = await dashboardRepository.GetTotalIncomeAsync(userId);
+        var totalExpenses = await dashboardRepository.GetTotalExpensesAsync(userId);
+        var thisMonthIncome = await dashboardRepository.GetThisMonthIncomeAsync(userId, currentMonth, currentYear);
+        var thisMonthExpense = await dashboardRepository.GetThisMonthExpensesAsync(userId, currentMonth, currentYear);
+
+        return new DashboardSummaryDto
         {
-            _context = context;
-        }
-
-        public async Task<DashboardSummaryDto> GetDashboardSummaryAsync(Guid userId)
-        {
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
-            var currentMonth = today.Month;
-            var currentYear = today.Year;
-
-            var totalIncome = await _context.Incomes
-                .Where(i => i.UserId == userId)
-                .SumAsync(i => (decimal?)i.Amount) ?? 0;
-
-            var totalExpenses = await _context.Expenses
-                .Where(e => e.UserId == userId)
-                .SumAsync(e => (decimal?)e.Amount) ?? 0;
-
-            var thisMonthIncome = await _context.Incomes
-                .Where(i => i.UserId == userId &&
-                            i.Date.Month == currentMonth &&
-                            i.Date.Year == currentYear)
-                .SumAsync(i => (decimal?)i.Amount) ?? 0;
-
-            var thisMonthExpense = await _context.Expenses
-                .Where(e => e.UserId == userId &&
-                            e.Date.Month == currentMonth &&
-                            e.Date.Year == currentYear)
-                .SumAsync(e => (decimal?)e.Amount) ?? 0;
-
-            return new DashboardSummaryDto
-            {
-                NetBalance = totalIncome - totalExpenses,
-                TotalIncome = totalIncome,
-                TotalExpenses = totalExpenses,
-                ThisMonth = thisMonthIncome - thisMonthExpense,
-                ThisMonthIncome = thisMonthIncome,
-                ThisMonthExpense = thisMonthExpense
-            };
-        }
+            NetBalance = totalIncome - totalExpenses,
+            TotalIncome = totalIncome,
+            TotalExpenses = totalExpenses,
+            ThisMonth = thisMonthIncome - thisMonthExpense,
+            ThisMonthIncome = thisMonthIncome,
+            ThisMonthExpense = thisMonthExpense
+        };
     }
 }

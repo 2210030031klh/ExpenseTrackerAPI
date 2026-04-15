@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using ShashiControllerAPI.DTOs;
-using ShashiControllerAPI.Service;
+using ExpenseApi.DTOs;
+using ExpenseApi.Service;
 
-namespace ShashiControllerAPI.Controllers;
+namespace ExpenseApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -29,17 +29,17 @@ public class IncomeController(IIncomeService incomeService) : ControllerBase
         return Ok(incomes);
     }
 
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<GetIncomeDto>> GetIncomeById(Guid id)
-    {
-        var userId = GetUserId();
-        var income = await incomeService.GetIncomeByIdAsync(id, userId);
+    // [HttpGet("{id:guid}")]
+    // public async Task<ActionResult<GetIncomeDto>> GetIncomeById(Guid id)
+    // {
+    //     var userId = GetUserId();
+    //     var income = await incomeService.GetIncomeByIdAsync(id, userId);
 
-        if (income is null)
-            return NotFound("Income not found");
+    //     if (income is null)
+    //         return NotFound("Income not found");
 
-        return Ok(income);
-    }
+    //     return Ok(income);
+    // }
 
     [HttpPost]
     public async Task<ActionResult<CreateIncomeDto>> AddIncome(CreateIncomeDto income)
@@ -95,13 +95,13 @@ public class IncomeController(IIncomeService incomeService) : ControllerBase
         return Ok(incomes);
     }
 
-    [HttpGet("report/source")]
-    public async Task<ActionResult<List<GetIncomeSourceReportDto>>> GetSourceReport()
-    {
-        var userId = GetUserId();
-        var report = await incomeService.GetSourceReportAsync(userId);
-        return Ok(report);
-    }
+    // [HttpGet("report/source")]
+    // public async Task<ActionResult<List<GetIncomeSourceReportDto>>> GetSourceReport()
+    // {
+    //     var userId = GetUserId();
+    //     var report = await incomeService.GetSourceReportAsync(userId);
+    //     return Ok(report);
+    // }
 
     [HttpGet("summary")]
     public async Task<ActionResult<IncomeSummaryDto>> GetIncomeSummary()

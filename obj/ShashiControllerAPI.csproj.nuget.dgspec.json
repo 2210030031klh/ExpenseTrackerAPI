@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/Users/shashi/Desktop/Desktop/Dotnet/ShashiControllerAPI/ShashiControllerAPI.csproj": {}
+    "/Users/shashi/Desktop/Desktop/Dotnet/ExpenseApi/ExpenseApi.csproj": {}
   },
   "projects": {
-    "/Users/shashi/Desktop/Desktop/Dotnet/ShashiControllerAPI/ShashiControllerAPI.csproj": {
+    "/Users/shashi/Desktop/Desktop/Dotnet/ExpenseApi/ExpenseApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/shashi/Desktop/Desktop/Dotnet/ShashiControllerAPI/ShashiControllerAPI.csproj",
-        "projectName": "ShashiControllerAPI",
-        "projectPath": "/Users/shashi/Desktop/Desktop/Dotnet/ShashiControllerAPI/ShashiControllerAPI.csproj",
+        "projectUniqueName": "/Users/shashi/Desktop/Desktop/Dotnet/ExpenseApi/ExpenseApi.csproj",
+        "projectName": "ExpenseApi",
+        "projectPath": "/Users/shashi/Desktop/Desktop/Dotnet/ExpenseApi/ExpenseApi.csproj",
         "packagesPath": "/Users/shashi/.nuget/packages/",
-        "outputPath": "/Users/shashi/Desktop/Desktop/Dotnet/ShashiControllerAPI/obj/",
+        "outputPath": "/Users/shashi/Desktop/Desktop/Dotnet/ExpenseApi/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/Users/shashi/.nuget/NuGet/NuGet.Config"

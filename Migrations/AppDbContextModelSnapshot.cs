@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using ShashiControllerAPI.Data;
+using ExpenseApi.Data;
 
 #nullable disable
 
-namespace ShashiControllerAPI.Migrations
+namespace ExpenseApi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     partial class AppDbContextModelSnapshot : ModelSnapshot
@@ -22,7 +22,7 @@ namespace ShashiControllerAPI.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
-            modelBuilder.Entity("ShashiControllerAPI.Models.Budget", b =>
+            modelBuilder.Entity("ExpenseApi.Models.Budget", b =>
                 {
                     b.Property<Guid>("BudgetId")
                         .ValueGeneratedOnAdd()
@@ -55,7 +55,7 @@ namespace ShashiControllerAPI.Migrations
                     b.ToTable("Budgets");
                 });
 
-            modelBuilder.Entity("ShashiControllerAPI.Models.Category", b =>
+            modelBuilder.Entity("ExpenseApi.Models.Category", b =>
                 {
                     b.Property<int>("CategoryId")
                         .ValueGeneratedOnAdd()
@@ -155,7 +155,7 @@ namespace ShashiControllerAPI.Migrations
                         });
                 });
 
-            modelBuilder.Entity("ShashiControllerAPI.Models.Expense", b =>
+            modelBuilder.Entity("ExpenseApi.Models.Expense", b =>
                 {
                     b.Property<Guid>("ExpenseId")
                         .ValueGeneratedOnAdd()
@@ -192,7 +192,7 @@ namespace ShashiControllerAPI.Migrations
                     b.ToTable("Expenses");
                 });
 
-            modelBuilder.Entity("ShashiControllerAPI.Models.Income", b =>
+            modelBuilder.Entity("ExpenseApi.Models.Income", b =>
                 {
                     b.Property<Guid>("IncomeId")
                         .ValueGeneratedOnAdd()
@@ -231,7 +231,7 @@ namespace ShashiControllerAPI.Migrations
                     b.ToTable("Incomes");
                 });
 
-            modelBuilder.Entity("ShashiControllerAPI.Models.User", b =>
+            modelBuilder.Entity("ExpenseApi.Models.User", b =>
                 {
                     b.Property<Guid>("UserId")
                         .ValueGeneratedOnAdd()
@@ -278,15 +278,15 @@ namespace ShashiControllerAPI.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("ShashiControllerAPI.Models.Budget", b =>
+            modelBuilder.Entity("ExpenseApi.Models.Budget", b =>
                 {
-                    b.HasOne("ShashiControllerAPI.Models.Category", "Category")
+                    b.HasOne("ExpenseApi.Models.Category", "Category")
                         .WithMany()
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ShashiControllerAPI.Models.User", "User")
+                    b.HasOne("ExpenseApi.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -297,9 +297,9 @@ namespace ShashiControllerAPI.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ShashiControllerAPI.Models.Expense", b =>
+            modelBuilder.Entity("ExpenseApi.Models.Expense", b =>
                 {
-                    b.HasOne("ShashiControllerAPI.Models.Category", "Category")
+                    b.HasOne("ExpenseApi.Models.Category", "Category")
                         .WithMany()
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -308,9 +308,9 @@ namespace ShashiControllerAPI.Migrations
                     b.Navigation("Category");
                 });
 
-            modelBuilder.Entity("ShashiControllerAPI.Models.Income", b =>
+            modelBuilder.Entity("ExpenseApi.Models.Income", b =>
                 {
-                    b.HasOne("ShashiControllerAPI.Models.User", "User")
+                    b.HasOne("ExpenseApi.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)

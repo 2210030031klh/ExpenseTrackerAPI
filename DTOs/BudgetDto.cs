@@ -1,10 +1,10 @@
-namespace ShashiControllerAPI.DTOs;
+namespace ExpenseApi.DTOs;
 
 using System.ComponentModel.DataAnnotations;
 public class BudgetReportDto
 {
     public string CategoryName { get; set; } = string.Empty;  // category name
-    public int BudgetAmount { get; set; }                      // how much budgeted
+    public int BudgetAmount { get; set; }                      // how much budget allocated
     public int SpentAmount { get; set; }                       // how much spent
     public int RemainingAmount { get; set; }                   // budget - spent
     public double Percentage { get; set; }                     // spent/budget × 100

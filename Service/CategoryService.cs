@@ -1,33 +1,25 @@
-namespace ShashiControllerAPI.Service;
-using Microsoft.EntityFrameworkCore;
-using ShashiControllerAPI.Data;
-using ShashiControllerAPI.DTOs;
-using ShashiControllerAPI.Models;
+using ExpenseApi.DTOs;
+using ExpenseApi.Models;
+using ExpenseApi.Repository;
 
-public class CategoryService(AppDbContext context) : ICategoryService
-{
-    // Get system categories + user's personal categories
-public async Task<List<GetCategoryDto>> GetCategoriesAsync(Guid userId, string? type = null)
-{
-    var query = context.Categories
-        .Where(c => c.UserId == null || c.UserId == userId);
+namespace ExpenseApi.Service;
 
-    if (!string.IsNullOrWhiteSpace(type))
+public class CategoryService(ICategoryRepository categoryRepository) : ICategoryService
+{
+    public async Task<List<GetCategoryDto>> GetCategoriesAsync(Guid userId, string? type = null)
     {
-        query = query.Where(c => c.Type == type);
+        var categories = await categoryRepository.GetCategoriesAsync(userId, type);
+
+        return categories
+            .Select(c => new GetCategoryDto
+            {
+                CategoryId = c.CategoryId,
+                CategoryName = c.CategoryName,
+                IsPersonal = c.UserId != null
+            })
+            .ToList();
     }
 
-    return await query
-        .Select(c => new GetCategoryDto
-        {
-            CategoryId = c.CategoryId,
-            CategoryName = c.CategoryName,
-            IsPersonal = c.UserId != null
-        })
-        .ToListAsync();
-}
-
-   // Create personal category
     public async Task<GetCategoryDto> CreateCategoryAsync(CreateCategoryDto dto, Guid userId)
     {
         if (dto is null)
@@ -40,6 +32,7 @@ public async Task<List<GetCategoryDto>> GetCategoriesAsync(Guid userId, string? 
             throw new ArgumentException("Category name is required.");
 
         var categoryName = dto.CategoryName.Trim();
+
         var category = new Category
         {
             CategoryName = categoryName,
@@ -47,8 +40,8 @@ public async Task<List<GetCategoryDto>> GetCategoriesAsync(Guid userId, string? 
             UserId = userId
         };
 
-        context.Categories.Add(category);
-        await context.SaveChangesAsync();
+        await categoryRepository.AddCategoryAsync(category);
+        await categoryRepository.SaveChangesAsync();
 
         return new GetCategoryDto
         {
@@ -57,17 +50,16 @@ public async Task<List<GetCategoryDto>> GetCategoriesAsync(Guid userId, string? 
             IsPersonal = true
         };
     }
-    // Delete only if it belongs to the user
+
     public async Task<bool> DeleteCategoryAsync(int id, Guid userId)
     {
-        var category = await context.Categories
-            .FirstOrDefaultAsync(c => c.CategoryId == id && c.UserId == userId);
+        var category = await categoryRepository.GetCategoryByIdAsync(id, userId);
 
         if (category is null)
             return false;
 
-        context.Categories.Remove(category);
-        await context.SaveChangesAsync();
+        await categoryRepository.DeleteCategoryAsync(category);
+        await categoryRepository.SaveChangesAsync();
         return true;
     }
 }

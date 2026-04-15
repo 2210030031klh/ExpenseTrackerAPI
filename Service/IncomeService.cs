@@ -1,65 +1,63 @@
-using Microsoft.EntityFrameworkCore;
-using ShashiControllerAPI.Data;
-using ShashiControllerAPI.DTOs;
-using ShashiControllerAPI.Models;
+using ExpenseApi.DTOs;
+using ExpenseApi.Models;
+using ExpenseApi.Repository;
 
-namespace ShashiControllerAPI.Service;
+namespace ExpenseApi.Service;
 
-public class IncomeService(AppDbContext context) : IIncomeService
+public class IncomeService(IIncomeRepository incomeRepository) : IIncomeService
 {
     public async Task<List<GetIncomeDto>> GetAllIncomesAsync(Guid userId)
-        => await context.Incomes
-            .Where(i => i.UserId == userId)
-            .Select(i => new GetIncomeDto
-            {
-                IncomeId = i.IncomeId,
-                UserId = i.UserId,
-                Name=i.Name,
-                Amount = i.Amount,
-                Description = i.Description,
-                Source = i.Source,
-                Date = i.Date,
-                CreatedAt = i.CreatedAt
-            })
-            .ToListAsync();
+    {
+        if (userId == Guid.Empty)
+            throw new ArgumentException("Invalid user ID.");
+
+        return await incomeRepository.GetAllIncomesAsync(userId);
+    }
 
     public async Task<GetIncomeDto?> GetIncomeByIdAsync(Guid id, Guid userId)
-        => await context.Incomes
-            .Where(i => i.IncomeId == id&& i.UserId == userId)
-            .Select(i => new GetIncomeDto
-            {
-                IncomeId = i.IncomeId,
-                UserId = i.UserId,
-                Amount = i.Amount,
-                Description = i.Description,
-                Source = i.Source,
-                Date = i.Date,
-                CreatedAt = i.CreatedAt
-            })
-            .FirstOrDefaultAsync();
+    {
+        if (id == Guid.Empty)
+            throw new ArgumentException("Invalid income ID.");
+
+        if (userId == Guid.Empty)
+            throw new ArgumentException("Invalid user ID.");
+
+        return await incomeRepository.GetIncomeByIdAsync(id, userId);
+    }
 
     public async Task<CreateIncomeDto> AddIncomeAsync(CreateIncomeDto income, Guid userId)
     {
-        var userExists = await context.Users.AnyAsync(u => u.UserId == userId);
+        if (income is null)
+            throw new ArgumentNullException(nameof(income));
+
+        if (userId == Guid.Empty)
+            throw new ArgumentException("Invalid user ID.");
+
+        var userExists = await incomeRepository.UserExistsAsync(userId);
         if (!userExists)
             throw new ArgumentException("User not found.");
-            
+
+        if (string.IsNullOrWhiteSpace(income.Name))
+            throw new ArgumentException("Income name is required.");
+
+        if (string.IsNullOrWhiteSpace(income.Source))
+            throw new ArgumentException("Income source is required.");
+
         if (income.Amount <= 0)
             throw new ArgumentException("Amount must be greater than 0.");
-                // Check if user exist
 
         var newIncome = new Income
         {
             UserId = userId,
+            Name = income.Name.Trim(),
             Amount = income.Amount,
-            Description = income.Description,
-            Name = income.Name,
-            Source = income.Source,
+            Description = string.IsNullOrWhiteSpace(income.Description) ? null : income.Description.Trim(),
+            Source = income.Source.Trim(),
             Date = income.Date
-        };  
+        };
 
-        context.Incomes.Add(newIncome);
-        await context.SaveChangesAsync();
+        await incomeRepository.AddIncomeAsync(newIncome);
+        await incomeRepository.SaveChangesAsync();
 
         return new CreateIncomeDto
         {
@@ -73,99 +71,120 @@ public class IncomeService(AppDbContext context) : IIncomeService
 
     public async Task<bool> UpdateIncomeAsync(Guid id, UpdateIncomeDto income, Guid userId)
     {
-        var existing = await context.Incomes.FirstOrDefaultAsync(i => i.IncomeId == id && i.UserId == userId);
+        if (id == Guid.Empty)
+            throw new ArgumentException("Invalid income ID.");
+
+        if (income is null)
+            throw new ArgumentNullException(nameof(income));
+
+        if (userId == Guid.Empty)
+            throw new ArgumentException("Invalid user ID.");
+
+        var existing = await incomeRepository.GetIncomeByIdEntityAsync(id, userId);
+
         if (existing is null)
             return false;
 
+        if (string.IsNullOrWhiteSpace(income.Name))
+            throw new ArgumentException("Income name is required.");
+
+        if (string.IsNullOrWhiteSpace(income.Source))
+            throw new ArgumentException("Income source is required.");
+
+        if (income.Amount <= 0)
+            throw new ArgumentException("Amount must be greater than 0.");
+
+        if (existing.Name == income.Name.Trim() &&
+            existing.Amount == income.Amount &&
+            existing.Description == income.Description &&
+            existing.Source == income.Source.Trim() &&
+            existing.Date == income.Date)
+            throw new ArgumentException("No changes detected.");
+
+        existing.Name = income.Name.Trim();
         existing.Amount = income.Amount;
-        existing.Description = income.Description;
-        existing.Source = income.Source;
+        existing.Description = string.IsNullOrWhiteSpace(income.Description) ? null : income.Description.Trim();
+        existing.Source = income.Source.Trim();
         existing.Date = income.Date;
 
-        await context.SaveChangesAsync();
+        await incomeRepository.SaveChangesAsync();
         return true;
     }
 
     public async Task<bool> DeleteIncomeAsync(Guid id, Guid userId)
     {
-        var income = await context.Incomes.FirstOrDefaultAsync(i => i.IncomeId == id && i.UserId == userId);
+        if (id == Guid.Empty)
+            throw new ArgumentException("Invalid income ID.");
+
+        if (userId == Guid.Empty)
+            throw new ArgumentException("Invalid user ID.");
+
+        var income = await incomeRepository.GetIncomeByIdEntityAsync(id, userId);
+
         if (income is null)
             return false;
 
-        context.Incomes.Remove(income);
-        await context.SaveChangesAsync();
+        await incomeRepository.DeleteIncomeAsync(income);
+        await incomeRepository.SaveChangesAsync();
         return true;
     }
 
     public async Task<List<GetIncomeDto>> GetIncomesBySourceAsync(string source, Guid userId)
-    => await context.Incomes
-        .Where(i => i.UserId == userId && i.Source == source)
-        .Select(i => new GetIncomeDto
-        {
-            Name=i.Name,
-            IncomeId = i.IncomeId,
-            UserId = i.UserId,
-            Amount = i.Amount,
-            Description = i.Description,
-            Source = i.Source,
-            Date = i.Date,
-            CreatedAt = i.CreatedAt
-        })
-        .ToListAsync();
+    {
+        if (userId == Guid.Empty)
+            throw new ArgumentException("Invalid user ID.");
+
+        if (string.IsNullOrWhiteSpace(source))
+            throw new ArgumentException("Source is required.");
+
+        source = source.Trim();
+
+        return await incomeRepository.GetIncomesBySourceAsync(source, userId);
+    }
 
     public async Task<List<GetIncomeDto>> GetIncomesByDateRangeAsync(DateOnly startDate, DateOnly endDate, Guid userId)
-    => await context.Incomes
-        .Where(i => i.UserId == userId && i.Date >= startDate && i.Date <= endDate)
-        .Select(i => new GetIncomeDto
-        {
-            IncomeId = i.IncomeId,
-            UserId = i.UserId,
-            Amount = i.Amount,
-            Description = i.Description,
-            Source = i.Source,
-            Date = i.Date,
-            CreatedAt = i.CreatedAt
-        })
-        .ToListAsync();
+    {
+        if (userId == Guid.Empty)
+            throw new ArgumentException("Invalid user ID.");
+
+        if (startDate > endDate)
+            throw new ArgumentException("Start date cannot be greater than end date.");
+
+        return await incomeRepository.GetIncomesByDateRangeAsync(startDate, endDate, userId);
+    }
 
     public async Task<List<GetIncomeSourceReportDto>> GetSourceReportAsync(Guid userId)
-    => await context.Incomes
-        .Where(i => i.UserId == userId)
-        .GroupBy(i => i.Source)
-        .Select(g => new GetIncomeSourceReportDto
-        {
-            Source = g.Key,
-            TotalAmount = g.Sum(i => i.Amount)
-        })
-        .ToListAsync();
+    {
+        if (userId == Guid.Empty)
+            throw new ArgumentException("Invalid user ID.");
 
-    
+        return await incomeRepository.GetSourceReportAsync(userId);
+    }
+
     public async Task<IncomeSummaryDto> GetIncomeSummaryAsync(Guid userId)
     {
-    if (userId == Guid.Empty)
-        throw new ArgumentException("Invalid user ID.");
+        if (userId == Guid.Empty)
+            throw new ArgumentException("Invalid user ID.");
 
-    var incomes = await context.Incomes
-        .Where(i => i.UserId == userId)
-        .ToListAsync();
+        var incomes = await incomeRepository.GetUserIncomesAsync(userId);
 
-    var totalAmount = incomes.Sum(i => i.Amount);
-    var totalTransactions = incomes.Count;
+        var totalAmount = incomes.Sum(i => i.Amount);
+        var totalTransactions = incomes.Count;
 
-    var today = DateTime.Now;
+        var today = DateTime.Now;
 
-    var thisMonthTransactions = incomes.Count(i =>
-        i.Date.Month == today.Month && i.Date.Year == today.Year
-    );
+        var thisMonthTransactions = incomes.Count(i =>
+            i.Date.Month == today.Month && i.Date.Year == today.Year
+        );
 
-    return new IncomeSummaryDto
-    {
-        TotalAmount = totalAmount,
-        TotalTransactions = totalTransactions,
-        ThisMonthTransactions = thisMonthTransactions,
-        AverageAmount = totalTransactions > 0
-            ? (double)totalAmount / totalTransactions
-            : 0
-    };
-}
+        return new IncomeSummaryDto
+        {
+            TotalAmount = totalAmount,
+            TotalTransactions = totalTransactions,
+            ThisMonthTransactions = thisMonthTransactions,
+            AverageAmount = totalTransactions > 0
+                ? (double)totalAmount / totalTransactions
+                : 0
+        };
+    }
 }

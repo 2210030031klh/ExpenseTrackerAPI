@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 
-using ShashiControllerAPI.Models;
+using ExpenseApi.Models;
 
-namespace ShashiControllerAPI.Data;
+namespace ExpenseApi.Data;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<Expense> Expenses => Set<Expense>();

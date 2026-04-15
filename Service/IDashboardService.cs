@@ -1,6 +1,6 @@
-using ShashiControllerAPI.DTOs;
+using ExpenseApi.DTOs;
 
-namespace ShashiControllerAPI.Service
+namespace ExpenseApi.Service
 {
     public interface IDashboardService
     {

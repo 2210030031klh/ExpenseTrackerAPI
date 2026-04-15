@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
 
-namespace ShashiControllerAPI.Migrations
+namespace ExpenseApi.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration

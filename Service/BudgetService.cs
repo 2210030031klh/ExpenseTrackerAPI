@@ -1,36 +1,49 @@
-using Microsoft.EntityFrameworkCore;
-using ShashiControllerAPI.Data;
-using ShashiControllerAPI.DTOs;
-using ShashiControllerAPI.Models;
+using ExpenseApi.DTOs;
+using ExpenseApi.Models;
+using ExpenseApi.Repository;
 
-namespace ShashiControllerAPI.Service;
+namespace ExpenseApi.Service;
 
-public class BudgetService(AppDbContext context) : IBudgetService
+public class BudgetService(IBudgetRepository budgetRepository) : IBudgetService
 {
     public async Task<List<GetBudgetDto>> GetAllBudgetsAsync(Guid userId)
-        => await context.Budgets
-            .Include(b => b.Category)
-            .Where(b => b.UserId == userId)
-            .Select(b => new GetBudgetDto
-            {
-                BudgetId = b.BudgetId,
-                CategoryId = b.CategoryId,
-                CategoryName = b.Category.CategoryName,
-                Amount = b.Amount,
-                Month = b.Month,
-                Year = b.Year
-            })
-            .ToListAsync();
+    {
+        var budgets = await budgetRepository.GetAllBudgetsAsync(userId);
+
+        return budgets.Select(b => new GetBudgetDto
+        {
+            BudgetId = b.BudgetId,
+            CategoryId = b.CategoryId,
+            CategoryName = b.Category.CategoryName,
+            Amount = b.Amount,
+            Month = b.Month,
+            Year = b.Year
+        }).ToList();
+    }
 
     public async Task<CreateBudgetDto> AddBudgetAsync(CreateBudgetDto budget, Guid userId)
     {
-        // Check if budget already exists for this category/month/year
-    
-        var exists = await context.Budgets.AnyAsync(b =>
-            b.UserId == userId &&
-            b.CategoryId == budget.CategoryId &&
-            b.Month == budget.Month &&
-            b.Year == budget.Year);
+        if (budget is null)
+            throw new ArgumentNullException(nameof(budget), "Budget data is required.");
+
+        if (budget.CategoryId == 0)
+            throw new ArgumentException("Valid category is required.");
+
+        if (budget.Amount <= 0)
+            throw new ArgumentException("Budget amount must be greater than 0.");
+
+        if (budget.Month < 1 || budget.Month > 12)
+            throw new ArgumentException("Month must be between 1 and 12.");
+
+        if (budget.Year < 2000 || budget.Year > 2100)
+            throw new ArgumentException("Year is invalid.");
+
+        var categoryExists = await budgetRepository.CategoryExistsAsync(budget.CategoryId);
+
+        if (!categoryExists)
+            throw new ArgumentException("Selected category does not exist.");
+
+        var exists = await budgetRepository.BudgetExistsAsync(userId, budget.CategoryId, budget.Month, budget.Year);
 
         if (exists)
             throw new ArgumentException("Budget already exists for this category and month.");
@@ -44,8 +57,8 @@ public class BudgetService(AppDbContext context) : IBudgetService
             Year = budget.Year
         };
 
-        context.Budgets.Add(newBudget);
-        await context.SaveChangesAsync();
+        await budgetRepository.AddBudgetAsync(newBudget);
+        await budgetRepository.SaveChangesAsync();
 
         return new CreateBudgetDto
         {
@@ -57,47 +70,94 @@ public class BudgetService(AppDbContext context) : IBudgetService
     }
 
     public async Task<bool> UpdateBudgetAsync(Guid id, CreateBudgetDto budget, Guid userId)
-        {
-            var existing = await context.Budgets.FirstOrDefaultAsync(b => b.BudgetId == id && b.UserId == userId);
-            if (existing is null)
+    {
+        if (budget is null)
+            throw new ArgumentNullException(nameof(budget), "Budget data is required.");
+
+        if (budget.CategoryId == 0)
+            throw new ArgumentException("Valid category is required.");
+
+        if (budget.Amount <= 0)
+            throw new ArgumentException("Budget amount must be greater than 0.");
+
+        if (budget.Month < 1 || budget.Month > 12)
+            throw new ArgumentException("Month must be between 1 and 12.");
+
+        if (budget.Year < 2000 || budget.Year > 2100)
+            throw new ArgumentException("Year is invalid.");
+
+        var existing = await budgetRepository.GetBudgetByIdAsync(id, userId);
+
+        if (existing is null)
             return false;
 
-            existing.Amount = budget.Amount;
-            existing.Month = budget.Month;
-            existing.Year = budget.Year;
-            existing.CategoryId = budget.CategoryId;
+        var categoryExists = await budgetRepository.CategoryExistsAsync(budget.CategoryId);
 
-            await context.SaveChangesAsync();
-            return true;
-        }
+        if (!categoryExists)
+            throw new ArgumentException("Selected category does not exist.");
+
+        var duplicateExists = await budgetRepository.DuplicateBudgetExistsAsync(
+            userId,
+            budget.CategoryId,
+            budget.Month,
+            budget.Year,
+            id
+        );
+
+        if (duplicateExists)
+            throw new ArgumentException("Another budget already exists for this category and month.");
+
+        if (existing.CategoryId == budget.CategoryId &&
+            existing.Amount == budget.Amount &&
+            existing.Month == budget.Month &&
+            existing.Year == budget.Year)
+            throw new ArgumentException("No changes detected.");
+
+        existing.CategoryId = budget.CategoryId;
+        existing.Amount = budget.Amount;
+        existing.Month = budget.Month;
+        existing.Year = budget.Year;
+
+        await budgetRepository.SaveChangesAsync();
+        return true;
+    }
 
     public async Task<bool> DeleteBudgetAsync(Guid id, Guid userId)
     {
-        var budget = await context.Budgets.FirstOrDefaultAsync(b => b.BudgetId == id && b.UserId == userId);
+        var budget = await budgetRepository.GetBudgetByIdAsync(id, userId);
+
         if (budget is null)
             return false;
 
-        context.Budgets.Remove(budget);
-        await context.SaveChangesAsync();
+        await budgetRepository.DeleteBudgetAsync(budget);
+        await budgetRepository.SaveChangesAsync();
         return true;
     }
+
     public async Task<List<BudgetReportDto>> GetBudgetReportAsync(Guid userId, int month, int year)
     {
-        var budgets = await context.Budgets
-            .Include(b => b.Category)
-            .Where(b => b.UserId == userId && b.Month == month && b.Year == year)
-            .ToListAsync();
+        if (month < 1 || month > 12)
+            throw new ArgumentException("Month must be between 1 and 12.");
+
+        if (year < 2000 || year > 2100)
+            throw new ArgumentException("Year is invalid.");
+
+        var budgets = await budgetRepository.GetBudgetsForReportAsync(userId, month, year);
+
+        if (!budgets.Any())
+            return new List<BudgetReportDto>();
+
+        var categoryIds = budgets.Select(b => b.CategoryId).ToList();
+
+        var expenseTotals = await budgetRepository.GetExpenseTotalsAsync(userId, categoryIds, month, year);
 
         var result = new List<BudgetReportDto>();
 
         foreach (var budget in budgets)
         {
-            var spent = await context.Expenses
-                .Where(e => e.UserId == userId &&
-                            e.CategoryId == budget.CategoryId &&
-                            e.Date.Month == month &&
-                            e.Date.Year == year)
-                .SumAsync(e => e.Amount);
+            var spent = expenseTotals.ContainsKey(budget.CategoryId)
+                ? expenseTotals[budget.CategoryId]
+                : 0;
 
             var remaining = budget.Amount - spent;
             var percentage = budget.Amount > 0
@@ -108,12 +168,12 @@ public class BudgetService(AppDbContext context) : IBudgetService
             {
                 CategoryName = budget.Category.CategoryName,
                 BudgetAmount = budget.Amount,
-                SpentAmount = spent,
-                RemainingAmount = remaining,
+                SpentAmount = (int)spent,
+                RemainingAmount = (int)remaining,
                 Percentage = percentage,
                 IsOverBudget = spent > budget.Amount
             });
-        }
+        }       
 
         return result;
     }

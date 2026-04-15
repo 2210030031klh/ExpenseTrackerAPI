@@ -2,15 +2,17 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using ShashiControllerAPI.DTOs;
-using ShashiControllerAPI.Models;
-using ShashiControllerAPI.Service;
+using ExpenseApi.DTOs;
+using ExpenseApi.Models;
+using ExpenseApi.Service;
+using System.Data;
 
-namespace ShashiControllerAPI.Controllers;
+namespace ExpenseApi.Controllers;
 
 
 [Route("api/[Controller]")]
 [ApiController]
+[Authorize]
 public class ExpenseController (IExpenseService expenseService): ControllerBase
 {
     
@@ -24,14 +26,14 @@ public class ExpenseController (IExpenseService expenseService): ControllerBase
         return Ok(result);
     }
     //no
-    [HttpGet("{id}")]
-    public async Task<ActionResult<GetExpenseDto>> GetExpensesById(Guid id)
-    {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        //handle it.
-        var result = await expenseService.GetExpensesByIdAsync(id, userId);
-        return Ok(result);      
-    }
+    // [HttpGet("{id}")]
+    // public async Task<ActionResult<GetExpenseDto>> GetExpensesById(Guid id)
+    // {
+    //     var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    //     //handle it.
+    //     var result = await expenseService.GetExpensesByIdAsync(id, userId);
+    //     return Ok(result);      
+    // }
 
     [HttpGet("category/{category}")]
     public async Task<ActionResult<PagedResultDto<GetExpenseDto>>> GetExpensesByCategory(
@@ -149,4 +151,17 @@ public class ExpenseController (IExpenseService expenseService): ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("export")]
+    public async Task<ActionResult> ExportExcel()
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        var fileContents = await expenseService.ExportExpensesToExcelAsync(userId);
+
+        return File(
+            fileContents,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "Expenses.xlsx"
+        );
+    }
 }

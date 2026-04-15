@@ -6,7 +6,7 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v10.0": {
-      "ShashiControllerAPI/1.0.0": {
+      "ExpenseApi/1.0.0": {
         "dependencies": {
           "Microsoft.AspNetCore.Authentication.JwtBearer": "9.0.0",
           "Microsoft.AspNetCore.OpenApi": "9.0.0",
@@ -17,7 +17,7 @@
           "System.IdentityModel.Tokens.Jwt": "8.16.0"
         },
         "runtime": {
-          "ShashiControllerAPI.dll": {}
+          "ExpenseApi.dll": {}
         }
       },
       "Humanizer.Core/2.14.1": {
@@ -584,7 +584,7 @@
     }
   },
   "libraries": {
-    "ShashiControllerAPI/1.0.0": {
+    "ExpenseApi/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

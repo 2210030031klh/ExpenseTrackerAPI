@@ -1,5 +1,5 @@
-namespace ShashiControllerAPI.Service;
-using ShashiControllerAPI.DTOs;
+namespace ExpenseApi.Service;
+using ExpenseApi.DTOs;
 
 public interface ICategoryService
 {

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using ShashiControllerAPI.Service;
-namespace ShashiControllerAPI.Controllers;
+using ExpenseApi.Service;
+namespace ExpenseApi.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]

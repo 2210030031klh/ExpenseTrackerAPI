@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using ShashiControllerAPI.DTOs;
-using ShashiControllerAPI.Service;
+using ExpenseApi.DTOs;
+using ExpenseApi.Service;
 
-namespace ShashiControllerAPI.Controllers;
+namespace ExpenseApi.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -55,18 +55,18 @@ public class BudgetController(IBudgetService budgetService) : ControllerBase
         return deleted ? NoContent() : NotFound($"Budget with ID {id} not found.");
     }
 
-    // dashboard
-    [HttpGet("report")]
-    public async Task<ActionResult<List<BudgetReportDto>>> GetBudgetReport(
-        [FromQuery] int month,
-        [FromQuery] int year)
-    {
-        if (month < 1 || month > 12)
-            return BadRequest("Month must be between 1 and 12.");
-        if (year < 2000 || year > 2100)
-            return BadRequest("Invalid year.");
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var result = await budgetService.GetBudgetReportAsync(userId, month, year);
-        return result.Count is 0 ? NotFound("No budget data found.") : Ok(result);
-    }
+    // // dashboard
+    // [HttpGet("report")]
+    // public async Task<ActionResult<List<BudgetReportDto>>> GetBudgetReport(
+    //     [FromQuery] int month,
+    //     [FromQuery] int year)
+    // {
+    //     if (month < 1 || month > 12)
+    //         return BadRequest("Month must be between 1 and 12.");
+    //     if (year < 2000 || year > 2100)
+    //         return BadRequest("Invalid year.");
+    //     var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    //     var result = await budgetService.GetBudgetReportAsync(userId, month, year);
+    //     return result.Count is 0 ? NotFound("No budget data found.") : Ok(result);
+    // }
 }

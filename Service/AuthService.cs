@@ -3,17 +3,16 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
-using ShashiControllerAPI.Data;
-using ShashiControllerAPI.DTOs;
-using ShashiControllerAPI.Models;
-using Microsoft.EntityFrameworkCore;
+using ExpenseApi.DTOs;
+using ExpenseApi.Models;
+using ExpenseApi.Repository;
 using System.Security.Cryptography;
 using System.Net.Mail;
 using System.Net;
 
-namespace ShashiControllerAPI.Service;
+namespace ExpenseApi.Service;
 
-public class AuthService(AppDbContext context,IConfiguration configuration) : IAuthService
+public class AuthService(IAuthRepository authRepository, IConfiguration configuration) : IAuthService
 {
     public async Task<RegisterResponseDto?> RegisterAsync(UserDto request)
     {
@@ -26,37 +25,35 @@ public class AuthService(AppDbContext context,IConfiguration configuration) : IA
         if (string.IsNullOrWhiteSpace(request.Password))
             throw new Exception("Password is required");
 
-        // Check username
-        if (await context.Users.AnyAsync(u => u.Username == request.Username))
+        request.Username = request.Username.Trim().ToLower();
+        request.Email = request.Email.Trim();
+
+        if (await authRepository.UsernameExistsAsync(request.Username))
             throw new Exception($"Username '{request.Username}' is already taken.");
 
-        // Check email
-        if (await context.Users.AnyAsync(u => u.Email == request.Email))
+        if (await authRepository.EmailExistsAsync(request.Email))
             throw new Exception($"Email '{request.Email}' is already in use.");
 
         if (!request.Email.Contains("@"))
             throw new Exception("Invalid email format");
 
-        if(request.Password.Length < 6)
+        if (request.Password.Length < 6)
             throw new Exception("Password must be atleast 6 characters");
-        
-        request.Username = request.Username.Trim();
-        request.Email = request.Email.Trim();
-        
 
         var user = new User
         {
-            Username = request.Username.ToLower(),
+            Username = request.Username,
             Email = request.Email,
-            PasswordHash = string.Empty,  // temp, will be overwritten below
+            PasswordHash = string.Empty,
             Role = request.Role
         };
 
         user.PasswordHash = new PasswordHasher<User>().HashPassword(user, request.Password);
-        context.Users.Add(user);
-        await context.SaveChangesAsync();
-        // return user;
-            return new RegisterResponseDto
+
+        await authRepository.AddUserAsync(user);
+        await authRepository.SaveChangesAsync();
+
+        return new RegisterResponseDto
         {
             UserId = user.UserId,
             Username = user.Username,
@@ -64,73 +61,77 @@ public class AuthService(AppDbContext context,IConfiguration configuration) : IA
             Role = user.Role,
             CreatedAt = user.CreatedAt
         };
-
     }
-
 
     public async Task<bool> LoginAsync(LoginDto request)
     {
-        // Implementation for login logic
-        var user = await context.Users
-        .FirstOrDefaultAsync(u => u.Username == request.Username.ToLower());
+        if (string.IsNullOrWhiteSpace(request.Username))
+            throw new Exception("Username is required");
+
+        if (string.IsNullOrWhiteSpace(request.Password))
+            throw new Exception("Password is required");
+
+        var user = await authRepository.GetUserByUsernameAsync(request.Username.Trim().ToLower());
+
         if (user == null)
-        {
             return false;
-        }
 
-        if (new PasswordHasher<User>().VerifyHashedPassword(user, user.PasswordHash, request.Password) == PasswordVerificationResult.Failed)
-        {
+        if (new PasswordHasher<User>().VerifyHashedPassword(user, user.PasswordHash, request.Password)
+            == PasswordVerificationResult.Failed)
             return false;
-            // throw new Exception("Invalid password.");
-        }
-        // return await CreateTokenResponse(user);
-        var otp= new Random().Next(100000,999999).ToString();
 
-        user.Otp=otp;
-        user.OtpExpiryTime=DateTime.UtcNow.AddMinutes(5);
+        var otp = new Random().Next(100000, 999999).ToString();
 
-        await context.SaveChangesAsync();
+        user.Otp = otp;
+        user.OtpExpiryTime = DateTime.UtcNow.AddMinutes(5);
+
+        await authRepository.SaveChangesAsync();
 
         await SendOtpEmail(user.Email, otp);
 
         return true;
     }
-    
+
     private async Task SendOtpEmail(string toEmail, string otp)
     {
-        using var message= new MailMessage();
+        using var message = new MailMessage();
         message.From = new MailAddress("gshashidhar.reddyy@gmail.com");
         message.To.Add(toEmail);
-        message.Subject="Your OTP Code";
-        message.Body=$"Hi User,\nOTP for login to your Expense Tracker account is: {otp}, it is valid for next 5 minutes";
+        message.Subject = "Your OTP Code";
+        message.Body = $"Hi User,\nOTP for login to your Expense Tracker account is: {otp}, it is valid for next 5 minutes";
 
-        using var smtp= new SmtpClient("smtp.gmail.com",587)
+        using var smtp = new SmtpClient("smtp.gmail.com", 587)
         {
             Credentials = new NetworkCredential(
                 configuration["Email:Sender"],
                 configuration["Email:Password"]
-
             ),
-        EnableSsl=true
+            EnableSsl = true
         };
+
         await smtp.SendMailAsync(message);
     }
 
     public async Task<TokenResponseDto?> VerifyOtpAsync(VerifyOtpDto request)
     {
-        var user = await context.Users.FirstOrDefaultAsync(u=> u.Username == request.Username);
-        if(user ==null)
-        {
+        if (string.IsNullOrWhiteSpace(request.Username))
+            throw new Exception("Username is required");
+
+        if (string.IsNullOrWhiteSpace(request.Otp))
+            throw new Exception("OTP is required");
+
+        var user = await authRepository.GetUserByUsernameAsync(request.Username.Trim().ToLower());
+
+        if (user == null)
             return null;
-        }
-        if(user.Otp!= request.Otp || user.OtpExpiryTime < DateTime.UtcNow)
+
+        if (user.Otp != request.Otp || user.OtpExpiryTime == null || user.OtpExpiryTime < DateTime.UtcNow)
             return null;
 
         user.Otp = null;
-        user.OtpExpiryTime=null;
-        
-        await context.SaveChangesAsync();
+        user.OtpExpiryTime = null;
 
+        await authRepository.SaveChangesAsync();
 
         return await CreateTokenResponse(user);
     }
@@ -148,41 +149,32 @@ public class AuthService(AppDbContext context,IConfiguration configuration) : IA
     {
         var randomNumber = new byte[32];
         using var rng = RandomNumberGenerator.Create();
-            rng.GetBytes(randomNumber);
-            return Convert.ToBase64String(randomNumber);
-        
+        rng.GetBytes(randomNumber);
+        return Convert.ToBase64String(randomNumber);
     }
-    private async Task<User?> ValidateRefreshTokenAsync(Guid userId, string refreshToken)
-    {
-        
-        var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
-        if(user is null || user.RefreshToken != refreshToken || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
-        {
-            return null; // Invalid refresh token
-        }
-        return user;
-    }  
 
     private async Task<string> GenerateAndSaveRefreshTokenAsync(User user)
     {
         var refreshToken = GenerateRefreshToken();
-        user.RefreshToken = refreshToken; 
-        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7); // Set expiry time (e.g., 24 hours)
-        await context.SaveChangesAsync();
+        user.RefreshToken = refreshToken;
+        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+
+        await authRepository.SaveChangesAsync();
         return refreshToken;
-    }   
+    }
 
     private string CreateToken(User user)
     {
-        // Implementation for token creation logic
-        var claims= new List<Claim>
+        var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.Name,user.Username),
-            new Claim(ClaimTypes.NameIdentifier,user.UserId.ToString()),
-            new Claim(ClaimTypes.Role,user.Role)
+            new Claim(ClaimTypes.Name, user.Username),
+            new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+            new Claim(ClaimTypes.Role, user.Role)
         };
+
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(configuration.GetValue<string>("AppSettings:Token")!));
+
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512);
 
         var tokenDescriptor = new JwtSecurityToken(
@@ -192,25 +184,139 @@ public class AuthService(AppDbContext context,IConfiguration configuration) : IA
             expires: DateTime.UtcNow.AddDays(1),
             signingCredentials: creds
         );
-        return new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
 
-        
+        return new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
     }
 
     public async Task<TokenResponseDto?> RefreshTokenAsync(RefreshTokenRequestDto request)
     {
-        var user = await ValidateRefreshTokenAsync(request.UserId, request.RefreshToken);
-        if(user is null)
-        {
-            return null; // Invalid refresh token
-        }
+        var user = await authRepository.GetUserByIdAsync(request.UserId);
 
-        // var response = new TokenResponseDto
-        // {
-        //     AccessToken = CreateToken(user),
-        //     RefreshToken = await GenerateAndSaveRefreshTokenAsync(user)
-        // };
+        if (user is null || user.RefreshToken != request.RefreshToken || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
+            return null;
 
         return await CreateTokenResponse(user);
+    }
+
+    public async Task<bool> ForgotPasswordAsync(ForgotPasswordDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email))
+            throw new Exception("Email is required");
+
+        var email = request.Email.Trim();
+
+        var user = await authRepository.GetUserByEmailAsync(email);
+        if (user == null)
+            return false;
+
+        var otp = new Random().Next(100000, 999999).ToString();
+
+        user.Otp = otp;
+        user.OtpExpiryTime = DateTime.UtcNow.AddMinutes(5);
+
+        await authRepository.SaveChangesAsync();
+
+        await SendForgotPasswordOtpEmail(user.Email, otp);
+
+        return true;
+    }
+
+    public async Task<bool> ResetPasswordAsync(ResetPasswordDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email))
+            throw new Exception("Email is required");
+
+        if (string.IsNullOrWhiteSpace(request.Otp))
+            throw new Exception("OTP is required");
+
+        if (string.IsNullOrWhiteSpace(request.NewPassword))
+            throw new Exception("New password is required");
+
+        if (request.NewPassword.Length < 6)
+            throw new Exception("Password must be atleast 6 characters");
+
+        if (request.NewPassword != request.ConfirmPassword)
+            throw new Exception("Passwords do not match");
+
+        var email = request.Email.Trim();
+
+        var user = await authRepository.GetUserByEmailAsync(email);
+        if (user == null)
+            return false;
+
+        if (user.Otp != request.Otp || user.OtpExpiryTime == null || user.OtpExpiryTime < DateTime.UtcNow)
+            return false;
+
+        user.PasswordHash = new PasswordHasher<User>().HashPassword(user, request.NewPassword);
+        user.Otp = null;
+        user.OtpExpiryTime = null;
+
+        await authRepository.SaveChangesAsync();
+
+        return true;
+    }
+
+    private async Task SendForgotPasswordOtpEmail(string toEmail, string otp)
+    {
+        using var message = new MailMessage();
+        message.From = new MailAddress("gshashidhar.reddyy@gmail.com");
+        message.To.Add(toEmail);
+        message.Subject = "Password Reset OTP";
+        message.Body = $"Hi User,\nYour OTP to reset your Expense Tracker password is: {otp}. It is valid for the next 5 minutes.";
+
+        using var smtp = new SmtpClient("smtp.gmail.com", 587)
+        {
+            Credentials = new NetworkCredential(
+                configuration["Email:Sender"],
+                configuration["Email:Password"]
+            ),
+            EnableSsl = true
+        };
+
+        await smtp.SendMailAsync(message);
+    }
+
+    public async Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.CurrentPassword))
+            throw new Exception("Current password is required");
+
+        if (string.IsNullOrWhiteSpace(request.NewPassword))
+            throw new Exception("New password is required");
+
+        if (string.IsNullOrWhiteSpace(request.ConfirmPassword))
+            throw new Exception("Confirm password is required");
+
+        if (request.NewPassword.Length < 6)
+            throw new Exception("Password must be at least 6 characters");
+
+        if (request.NewPassword != request.ConfirmPassword)
+            throw new Exception("Passwords do not match");
+
+        var user = await authRepository.GetUserByIdAsync(userId);
+
+        if (user == null)
+            throw new Exception("User not found");
+
+        var hasher = new PasswordHasher<User>();
+
+        var verifyResult = hasher.VerifyHashedPassword(
+            user,
+            user.PasswordHash,
+            request.CurrentPassword
+        );
+
+        if (verifyResult == PasswordVerificationResult.Failed)
+            return false;
+
+        if (hasher.VerifyHashedPassword(user, user.PasswordHash, request.NewPassword)
+            != PasswordVerificationResult.Failed)
+            throw new Exception("New password cannot be same as old password");
+
+        user.PasswordHash = hasher.HashPassword(user, request.NewPassword);
+
+        await authRepository.SaveChangesAsync();
+
+        return true;
     }
 }

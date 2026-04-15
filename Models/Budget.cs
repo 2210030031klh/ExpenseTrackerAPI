@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace ShashiControllerAPI.Models;
+namespace ExpenseApi.Models;
 
 public class Budget
 {

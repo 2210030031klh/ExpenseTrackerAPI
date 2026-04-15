@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ShashiControllerAPI.Service;
+using ExpenseApi.Service;
 using System.Security.Claims;
 
-namespace ShashiControllerAPI.Controllers
+namespace ExpenseApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

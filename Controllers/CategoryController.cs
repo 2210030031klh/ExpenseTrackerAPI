@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using ShashiControllerAPI.DTOs;
-using ShashiControllerAPI.Service;
+using ExpenseApi.DTOs;
+using ExpenseApi.Service;
 
-namespace ShashiControllerAPI.Controllers;
+namespace ExpenseApi.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/[controller]")] 
 [ApiController]
 [Authorize]
 public class CategoryController(ICategoryService categoryService) : ControllerBase

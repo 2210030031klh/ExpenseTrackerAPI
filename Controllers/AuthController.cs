@@ -1,16 +1,18 @@
 using Microsoft.AspNetCore.Mvc;
-using ShashiControllerAPI.DTOs;
-using ShashiControllerAPI.Models;
-using ShashiControllerAPI.Service;
+using ExpenseApi.DTOs;
+using ExpenseApi.Models;
+using ExpenseApi.Service;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
-namespace ShashiControllerAPI.Controllers;
+namespace ExpenseApi.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
 public class AuthController(IAuthService authService) : ControllerBase
 {
     [HttpPost("register")]
+    //
     public async Task<ActionResult <User>> Register(UserDto Request)
     {
         try{
@@ -42,10 +44,55 @@ public class AuthController(IAuthService authService) : ControllerBase
             return Ok(result);
     }
 
-    [Authorize(Roles = "Accountant")]
-    [HttpGet("Admin-Only")]
-    public IActionResult AdminOnlyEndpoint()
+    // [Authorize(Roles = "Accountant")]
+    // [HttpGet("Admin-Only")]
+    // public IActionResult AdminOnlyEndpoint()
+    // {
+    //     return Ok("You are an admin!");
+    // }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordDto request)
     {
-        return Ok("You are an admin!");
+        var result = await authService.ForgotPasswordAsync(request);
+
+        if (!result)
+            return BadRequest(new { message = "User with this email does not exist" });
+
+        return Ok(new { message = "OTP sent to your email" });
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(ResetPasswordDto request)
+    {
+        var result = await authService.ResetPasswordAsync(request);
+
+        if (!result)
+            return BadRequest(new { message = "Invalid OTP or OTP expired" });
+
+        return Ok(new { message = "Password reset successful" });
+    }
+
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto request)
+    {
+        try
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
+                return Unauthorized(new { message = "Invalid token" });
+
+            var result = await authService.ChangePasswordAsync(userId, request);
+
+            if (!result)
+                return BadRequest(new { message = "Current password is incorrect" });
+
+            return Ok(new { message = "Password changed successfully" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 }

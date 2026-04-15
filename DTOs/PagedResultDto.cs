@@ -1,4 +1,4 @@
-namespace ShashiControllerAPI.DTOs;
+namespace ExpenseApi.DTOs;
 
 public class PagedResultDto<T>
 {
