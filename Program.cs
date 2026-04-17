@@ -69,7 +69,7 @@ app.UseCors("AllowReact");
     app.MapOpenApi();
     app.MapScalarApiReference();
 
-
+app.UseDeveloperExceptionPage();
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
