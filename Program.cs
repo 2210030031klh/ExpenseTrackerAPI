@@ -64,12 +64,11 @@ var app = builder.Build();
 app.UseCors("AllowReact");
 
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
+
+
     app.MapOpenApi();
     app.MapScalarApiReference();
-}
+
 
 app.UseHttpsRedirection();
 
