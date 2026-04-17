@@ -55,7 +55,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReact", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins("http://localhost:5173","https://expensesfrontend-g4gedecvatfkdvdd.centralindia-01.azurewebsites.net")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
