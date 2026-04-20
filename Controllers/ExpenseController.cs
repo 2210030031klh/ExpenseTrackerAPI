@@ -6,6 +6,7 @@ using ExpenseApi.DTOs;
 using ExpenseApi.Models;
 using ExpenseApi.Service;
 using System.Data;
+using System.Text;
 
 namespace ExpenseApi.Controllers;
 
@@ -25,15 +26,6 @@ public class ExpenseController (IExpenseService expenseService): ControllerBase
         var result = await expenseService.GetAllExpensesAsync(userId, pageNumber, pageSize);
         return Ok(result);
     }
-    //no
-    // [HttpGet("{id}")]
-    // public async Task<ActionResult<GetExpenseDto>> GetExpensesById(Guid id)
-    // {
-    //     var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-    //     //handle it.
-    //     var result = await expenseService.GetExpensesByIdAsync(id, userId);
-    //     return Ok(result);      
-    // }
 
     [HttpGet("category/{category}")]
     public async Task<ActionResult<PagedResultDto<GetExpenseDto>>> GetExpensesByCategory(
@@ -118,7 +110,6 @@ public class ExpenseController (IExpenseService expenseService): ControllerBase
     }
     //dashboard
     [HttpGet("report/monthly")]
-    // [Authorize]
     public async Task<ActionResult<List<MonthlyReportDto>>> GetMonthlyReport()
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -127,7 +118,6 @@ public class ExpenseController (IExpenseService expenseService): ControllerBase
     }
     //dashboard
     [HttpGet("report/category")]
-    // [Authorize]
     public async Task<ActionResult<List<CategoryReportDto>>> GetCategoryReport()
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -151,17 +141,34 @@ public class ExpenseController (IExpenseService expenseService): ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("export")]
-    public async Task<ActionResult> ExportExcel()
+   [HttpGet("export")]
+public async Task<IActionResult> Export(string format = "xlsx")
+{
+    var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+    if (format.ToLower() == "csv")
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var expenses = await expenseService.GetExpensesForExportAsync(userId);
 
-        var fileContents = await expenseService.ExportExpensesToExcelAsync(userId);
+        var sb = new StringBuilder();
+        sb.AppendLine("\"Name\",\"Amount\",\"Description\",\"Date\"");
 
-        return File(
-            fileContents,
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "Expenses.xlsx"
-        );
+        foreach (var e in expenses)
+        {
+            sb.AppendLine($"\"{e.Name}\",\"{e.Amount}\",\"{e.Description ?? ""}\",\"{e.Date:yyyy-MM-dd}\"");
+        }
+
+        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+
+        return File(bytes, "text/csv", "Expenses.csv");
     }
+
+    var fileContents = await expenseService.ExportExpensesToExcelAsync(userId);
+
+    return File(
+        fileContents,
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Expenses.xlsx"
+    );
+}
 }

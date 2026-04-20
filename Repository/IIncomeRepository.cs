@@ -16,4 +16,22 @@ public interface IIncomeRepository
     Task<List<GetIncomeDto>> GetIncomesByDateRangeAsync(DateOnly startDate, DateOnly endDate, Guid userId);
     Task<List<GetIncomeSourceReportDto>> GetSourceReportAsync(Guid userId);
     Task<List<Income>> GetUserIncomesAsync(Guid userId);
+  Task<bool> DuplicateIncomeExistsAsync(
+    Guid userId,
+    string name,
+    string source,
+    int amount,
+    DateOnly date,
+    string? description
+);
+
+Task<bool> DuplicateIncomeExistsForUpdateAsync(
+    Guid id,
+    Guid userId,
+    string name,
+    string source,
+    int amount,
+    DateOnly date,
+    string? description
+);
 }

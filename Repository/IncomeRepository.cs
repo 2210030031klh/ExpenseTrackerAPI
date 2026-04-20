@@ -131,4 +131,40 @@ public class IncomeRepository(AppDbContext context) : IIncomeRepository
             .Where(i => i.UserId == userId)
             .ToListAsync();
     }
+
+
+
+
+
+    public async Task<bool> DuplicateIncomeExistsAsync(Guid userId, string name, string source, int amount, DateOnly date, string? description)
+    {
+        return await context.Incomes.AnyAsync(i =>
+            i.UserId == userId &&
+            i.Name.ToLower() == name.ToLower() &&
+            i.Source.ToLower() == source.ToLower() &&
+            i.Amount == amount &&
+            i.Date == date &&
+            (i.Description ?? "") == (description ?? "")
+        );
+    }
+
+   public async Task<bool> DuplicateIncomeExistsForUpdateAsync(
+    Guid id,
+    Guid userId,
+    string name,
+    string source,
+    int amount,
+    DateOnly date,
+    string? description)
+{
+    return await context.Incomes.AnyAsync(i =>
+        i.IncomeId != id &&
+        i.UserId == userId &&
+        i.Name == name &&
+        i.Source == source &&
+        i.Amount == amount &&
+        i.Date == date &&
+        (i.Description ?? "") == (description ?? "")
+    );
+}
 }

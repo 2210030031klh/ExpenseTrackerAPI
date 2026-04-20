@@ -358,41 +358,41 @@ public class ExpenseService(IExpenseRepository expenseRepository) : IExpenseServ
                 ? (double)totalAmount / totalTransactions
                 : 0
         };
+    }public async Task<byte[]> ExportExpensesToExcelAsync(Guid userId)
+{
+    if (userId == Guid.Empty)
+        throw new ArgumentException("Invalid user ID.");
+
+    var expenses = await expenseRepository.GetUserExpensesForExportAsync(userId);
+
+    using var workbook = new XLWorkbook();
+    var worksheet = workbook.Worksheets.Add("Expenses");
+
+    worksheet.Cell(1, 1).Value = "Name";
+    worksheet.Cell(1, 2).Value = "Amount";
+    worksheet.Cell(1, 3).Value = "Description";
+    worksheet.Cell(1, 4).Value = "Date";
+
+    for (int i = 0; i < expenses.Count; i++)
+    {
+        var e = expenses[i];
+        var row = i + 2;
+
+        worksheet.Cell(row, 1).Value = e.Name ?? "";
+        worksheet.Cell(row, 2).Value = e.Amount;
+        worksheet.Cell(row, 3).Value = e.Description ?? "";
+        worksheet.Cell(row, 4).Value = e.Date.ToDateTime(TimeOnly.MinValue);
+        worksheet.Cell(row, 4).Style.DateFormat.Format = "yyyy-MM-dd";
     }
 
-    public async Task<byte[]> ExportExpensesToExcelAsync(Guid userId)
+    worksheet.Columns().AdjustToContents();
+
+    using var stream = new MemoryStream();
+    workbook.SaveAs(stream);
+    return stream.ToArray();
+}
+        public async Task<List<Expense>> GetExpensesForExportAsync(Guid userId)
     {
-        if (userId == Guid.Empty)
-            throw new ArgumentException("Invalid user ID.");
-
-        var expenses = await expenseRepository.GetUserExpensesForExportAsync(userId);
-
-        using var workbook = new XLWorkbook();
-        var worksheet = workbook.Worksheets.Add("Expenses");
-
-        
-        worksheet.Cell(1, 1).Value = "Name";
-        worksheet.Cell(1, 2).Value = "Amount";
-        worksheet.Cell(1, 3).Value = "Description";
-        worksheet.Cell(1, 4).Value = "Date";
-        
-
-        
-        for (int i = 0; i < expenses.Count; i++)
-        {
-            var e = expenses[i];
-            var row = i + 2;
-
-            worksheet.Cell(row, 1).Value = e.Name;
-            worksheet.Cell(row, 2).Value = e.Amount;
-            worksheet.Cell(row, 3).Value = e.Description ?? "";
-            worksheet.Cell(row, 4).Value = e.Date.ToString("yyyy-MM-dd");
-        }
-
-        worksheet.Columns().AdjustToContents();
-
-        using var stream = new MemoryStream();
-        workbook.SaveAs(stream);
-        return stream.ToArray();
+        return await expenseRepository.GetUserExpensesForExportAsync(userId);
     }
 }

@@ -1,6 +1,7 @@
 using ExpenseApi.DTOs;
 using ExpenseApi.Models;
 using ExpenseApi.Repository;
+using Microsoft.EntityFrameworkCore;
 
 namespace ExpenseApi.Service;
 
@@ -27,8 +28,8 @@ public class IncomeService(IIncomeRepository incomeRepository) : IIncomeService
 
     public async Task<CreateIncomeDto> AddIncomeAsync(CreateIncomeDto income, Guid userId)
     {
-        if (income is null)
-            throw new ArgumentNullException(nameof(income));
+        if (income == null)
+            throw new ArgumentNullException(nameof(income), "Income data is required.");
 
         if (userId == Guid.Empty)
             throw new ArgumentException("Invalid user ID.");
@@ -37,27 +38,71 @@ public class IncomeService(IIncomeRepository incomeRepository) : IIncomeService
         if (!userExists)
             throw new ArgumentException("User not found.");
 
-        if (string.IsNullOrWhiteSpace(income.Name))
+        var incomeName = income.Name?.Trim();
+        var incomeSource = income.Source?.Trim();
+        var description = income.Description?.Trim();
+
+        if (string.IsNullOrWhiteSpace(incomeName))
             throw new ArgumentException("Income name is required.");
 
-        if (string.IsNullOrWhiteSpace(income.Source))
+        if (string.IsNullOrWhiteSpace(incomeSource))
             throw new ArgumentException("Income source is required.");
 
         if (income.Amount <= 0)
             throw new ArgumentException("Amount must be greater than 0.");
 
+        if (income.Amount > 10000000)
+            throw new ArgumentException("Amount is too large.");
+
+        var today = DateOnly.FromDateTime(DateTime.Now);
+
+        if (income.Date == default)
+            throw new ArgumentException("Income date is required.");
+
+        if (income.Date > today)
+            throw new ArgumentException("Income date cannot be in the future.");
+
+        if (income.Date < new DateOnly(1900, 1, 1))
+            throw new ArgumentException("Income date is too old.");
+
+        if (!string.IsNullOrWhiteSpace(description) && description.Length > 500)
+            throw new ArgumentException("Description cannot exceed 500 characters.");
+
+        var duplicateExists = await incomeRepository.DuplicateIncomeExistsAsync(
+            userId,
+            incomeName,
+            incomeSource,
+            income.Amount,
+            income.Date,
+            description
+        );
+
+        if (duplicateExists)
+            throw new ArgumentException("Duplicate income already exists.");
+
         var newIncome = new Income
         {
             UserId = userId,
-            Name = income.Name.Trim(),
+            Name = incomeName,
+            Source = incomeSource,
             Amount = income.Amount,
-            Description = string.IsNullOrWhiteSpace(income.Description) ? null : income.Description.Trim(),
-            Source = income.Source.Trim(),
+            Description = description,
             Date = income.Date
         };
 
-        await incomeRepository.AddIncomeAsync(newIncome);
-        await incomeRepository.SaveChangesAsync();
+        try
+        {
+            await incomeRepository.AddIncomeAsync(newIncome);
+            await incomeRepository.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            throw new Exception("Database error occurred while saving income.");
+        }
+        catch (Exception)
+        {
+            throw new Exception("An unexpected error occurred while adding income.");
+        }
 
         return new CreateIncomeDto
         {
@@ -69,47 +114,88 @@ public class IncomeService(IIncomeRepository incomeRepository) : IIncomeService
         };
     }
 
-    public async Task<bool> UpdateIncomeAsync(Guid id, UpdateIncomeDto income, Guid userId)
+   public async Task<bool> UpdateIncomeAsync(Guid id, UpdateIncomeDto income, Guid userId)
+{
+    if (id == Guid.Empty)
+        throw new ArgumentException("Invalid income ID.");
+
+    if (userId == Guid.Empty)
+        throw new ArgumentException("Invalid user ID.");
+
+    if (income == null)
+        throw new ArgumentNullException(nameof(income), "Income data is required.");
+
+    var existing = await incomeRepository.GetIncomeByIdEntityAsync(id, userId);
+
+    if (existing is null)
+        return false;
+
+    if (string.IsNullOrWhiteSpace(income.Name))
+        throw new ArgumentException("Income name is required.");
+
+    var incomeName = income.Name.Trim();
+
+    if (string.IsNullOrWhiteSpace(income.Source))
+        throw new ArgumentException("Income source is required.");
+
+    var incomeSource = income.Source.Trim();
+
+    if (income.Amount <= 0)
+        throw new ArgumentException("Amount must be greater than 0.");
+
+    if (income.Amount > 10000000)
+        throw new ArgumentException("Amount is too large.");
+
+    var today = DateOnly.FromDateTime(DateTime.Now);
+
+    if (income.Date == default)
+        throw new ArgumentException("Income date is required.");
+
+    if (income.Date > today)
+        throw new ArgumentException("Income date cannot be in the future.");
+
+    if (income.Date < new DateOnly(1900, 1, 1))
+        throw new ArgumentException("Income date is too old.");
+
+    var description = income.Description?.Trim();
+
+    if (!string.IsNullOrWhiteSpace(description) && description.Length > 500)
+        throw new ArgumentException("Description cannot exceed 500 characters.");
+
+    var duplicateExists = await incomeRepository.DuplicateIncomeExistsForUpdateAsync(
+        id,
+        userId,
+        incomeName,
+        incomeSource,
+        income.Amount,
+        income.Date,
+        description
+    );
+
+    if (duplicateExists)
+        throw new ArgumentException("Another income with same details already exists.");
+
+    existing.Name = incomeName;
+    existing.Source = incomeSource;
+    existing.Amount = income.Amount;
+    existing.Description = description;
+    existing.Date = income.Date;
+
+    try
     {
-        if (id == Guid.Empty)
-            throw new ArgumentException("Invalid income ID.");
-
-        if (income is null)
-            throw new ArgumentNullException(nameof(income));
-
-        if (userId == Guid.Empty)
-            throw new ArgumentException("Invalid user ID.");
-
-        var existing = await incomeRepository.GetIncomeByIdEntityAsync(id, userId);
-
-        if (existing is null)
-            return false;
-
-        if (string.IsNullOrWhiteSpace(income.Name))
-            throw new ArgumentException("Income name is required.");
-
-        if (string.IsNullOrWhiteSpace(income.Source))
-            throw new ArgumentException("Income source is required.");
-
-        if (income.Amount <= 0)
-            throw new ArgumentException("Amount must be greater than 0.");
-
-        if (existing.Name == income.Name.Trim() &&
-            existing.Amount == income.Amount &&
-            existing.Description == income.Description &&
-            existing.Source == income.Source.Trim() &&
-            existing.Date == income.Date)
-            throw new ArgumentException("No changes detected.");
-
-        existing.Name = income.Name.Trim();
-        existing.Amount = income.Amount;
-        existing.Description = string.IsNullOrWhiteSpace(income.Description) ? null : income.Description.Trim();
-        existing.Source = income.Source.Trim();
-        existing.Date = income.Date;
-
         await incomeRepository.SaveChangesAsync();
-        return true;
     }
+    catch (DbUpdateException)
+    {
+        throw new Exception("Database error occurred while updating income.");
+    }
+    catch (Exception)
+    {
+        throw new Exception("An unexpected error occurred while updating income.");
+    }
+
+    return true;
+}
 
     public async Task<bool> DeleteIncomeAsync(Guid id, Guid userId)
     {
@@ -124,8 +210,20 @@ public class IncomeService(IIncomeRepository incomeRepository) : IIncomeService
         if (income is null)
             return false;
 
-        await incomeRepository.DeleteIncomeAsync(income);
-        await incomeRepository.SaveChangesAsync();
+        try
+        {
+            await incomeRepository.DeleteIncomeAsync(income);
+            await incomeRepository.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            throw new Exception("Database error occurred while deleting income.");
+        }
+        catch (Exception)
+        {
+            throw new Exception("An unexpected error occurred while deleting income.");
+        }
+
         return true;
     }
 
@@ -146,6 +244,12 @@ public class IncomeService(IIncomeRepository incomeRepository) : IIncomeService
     {
         if (userId == Guid.Empty)
             throw new ArgumentException("Invalid user ID.");
+
+        if (startDate == default)
+            throw new ArgumentException("Start date is required.");
+
+        if (endDate == default)
+            throw new ArgumentException("End date is required.");
 
         if (startDate > endDate)
             throw new ArgumentException("Start date cannot be greater than end date.");

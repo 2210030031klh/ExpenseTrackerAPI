@@ -25,6 +25,7 @@ public interface IExpenseService
 
     Task<List<GetExpenseDto>> GetAllUsersExpensesAsync();
 
+    Task<List<Expense>> GetExpensesForExportAsync(Guid userId);
     
     Task<ExpenseSummaryDto> GetExpenseSummaryAsync(Guid userId);
 
