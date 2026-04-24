@@ -8,7 +8,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Expense> Expenses => Set<Expense>();
     public DbSet<User> Users { get; set; }
     public DbSet<Category> Categories { get; set; }
-
     public DbSet<Budget> Budgets { get; set; }
     public DbSet<Income> Incomes { get; set; }
 
@@ -16,7 +15,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     {
         modelBuilder.Entity<Category>().HasData(
 
-            // 🔴 Expense Categories
             new Category { CategoryId = 1, CategoryName = "Food", Type = "Expense" },
             new Category { CategoryId = 2, CategoryName = "Transport", Type = "Expense" },
             new Category { CategoryId = 3, CategoryName = "Shopping", Type = "Expense" },
@@ -25,7 +23,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             new Category { CategoryId = 6, CategoryName = "Entertainment", Type = "Expense" },
             new Category { CategoryId = 7, CategoryName = "Loans", Type = "Expense" },
 
-            // 🟢 Income Categories
             new Category { CategoryId = 8, CategoryName = "Salary", Type = "Income" },
             new Category { CategoryId = 9, CategoryName = "Freelance", Type = "Income" },
             new Category { CategoryId = 10, CategoryName = "Business", Type = "Income" },

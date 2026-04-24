@@ -44,12 +44,6 @@ public class AuthController(IAuthService authService) : ControllerBase
             return Ok(result);
     }
 
-    // [Authorize(Roles = "Accountant")]
-    // [HttpGet("Admin-Only")]
-    // public IActionResult AdminOnlyEndpoint()
-    // {
-    //     return Ok("You are an admin!");
-    // }
 
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword(ForgotPasswordDto request)

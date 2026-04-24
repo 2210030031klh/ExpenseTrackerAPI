@@ -6,9 +6,9 @@ public class Budget
 {
     public Guid BudgetId { get; set; }                   // PK
 
-    public Guid UserId { get; set; }                     // FK → Users.UserId
+    public Guid UserId { get; set; }                     // FK -> Users.UserId
 
-    public int CategoryId { get; set; }                  // FK → Categories.CategoryId
+    public int CategoryId { get; set; }                  // FK -> Categories.CategoryId
 
     public int Amount { get; set; }                      // budget limit e.g. 5000
 
