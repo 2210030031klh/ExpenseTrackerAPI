@@ -142,33 +142,33 @@ public class ExpenseController (IExpenseService expenseService): ControllerBase
     }
 
    [HttpGet("export")]
-public async Task<IActionResult> Export(string format = "xlsx")
-{
-    var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-
-    if (format.ToLower() == "csv")
+    public async Task<IActionResult> Export(string format = "xlsx")
     {
-        var expenses = await expenseService.GetExpensesForExportAsync(userId);
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-        var sb = new StringBuilder();
-        sb.AppendLine("\"Name\",\"Amount\",\"Description\",\"Date\"");
-
-        foreach (var e in expenses)
+        if (format.ToLower() == "csv")
         {
-            sb.AppendLine($"\"{e.Name}\",\"{e.Amount}\",\"{e.Description ?? ""}\",\"{e.Date:yyyy-MM-dd}\"");
+            var expenses = await expenseService.GetExpensesForExportAsync(userId);
+
+            var sb = new StringBuilder();
+            sb.AppendLine("\"Name\",\"Amount\",\"Description\",\"Date\"");
+
+            foreach (var e in expenses)
+            {
+                sb.AppendLine($"\"{e.Name}\",\"{e.Amount}\",\"{e.Description ?? ""}\",\"{e.Date:yyyy-MM-dd}\"");
+            }
+
+            var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+
+            return File(bytes, "text/csv", "Expenses.csv");
         }
 
-        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+        var fileContents = await expenseService.ExportExpensesToExcelAsync(userId);
 
-        return File(bytes, "text/csv", "Expenses.csv");
+        return File(
+            fileContents,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "Expenses.xlsx"
+        );
     }
-
-    var fileContents = await expenseService.ExportExpensesToExcelAsync(userId);
-
-    return File(
-        fileContents,
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Expenses.xlsx"
-    );
-}
-}
+    }

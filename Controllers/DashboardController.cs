@@ -3,35 +3,23 @@ using Microsoft.AspNetCore.Mvc;
 using ExpenseApi.Service;
 using System.Security.Claims;
 
-namespace ExpenseApi.Controllers
+namespace ExpenseApi.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+[Authorize]
+public class DashboardController(IDashboardService dashboardService) : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    [Authorize]
-    public class DashboardController : ControllerBase
+    [HttpGet("summary")]
+    public async Task<IActionResult> GetSummary()
     {
-        private readonly IDashboardService _dashboardService;
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-        public DashboardController(IDashboardService dashboardService)
-        {
-            _dashboardService = dashboardService;
-        }
+        if (!Guid.TryParse(userIdClaim, out var userId))
+            return Unauthorized("Invalid user.");
 
-        [HttpGet("summary")]
-        public async Task<IActionResult> GetSummary()
-        {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var summary = await dashboardService.GetDashboardSummaryAsync(userId);
 
-            if (string.IsNullOrEmpty(userIdClaim))
-            {
-                return Unauthorized("User ID not found in token.");
-            }
-
-            var userId = Guid.Parse(userIdClaim);
-
-            var summary = await _dashboardService.GetDashboardSummaryAsync(userId);
-
-            return Ok(summary);
-        }
+        return Ok(summary);
     }
 }

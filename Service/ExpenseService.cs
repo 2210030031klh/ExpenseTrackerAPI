@@ -110,6 +110,9 @@ public class ExpenseService(IExpenseRepository expenseRepository) : IExpenseServ
         if (string.IsNullOrWhiteSpace(expenseName))
             throw new ArgumentException("Expense name is required.");
 
+        if(expense.Amount <= 0)
+            throw new ArgumentException("Amount must be greater than 0.");  
+
         if (expense.Amount > 10000000)
             throw new ArgumentException("Amount is too large.");
 

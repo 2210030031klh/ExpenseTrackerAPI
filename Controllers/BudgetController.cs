@@ -43,7 +43,7 @@ public class BudgetController(IBudgetService budgetService) : ControllerBase
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var updated = await budgetService.UpdateBudgetAsync(id, budget,userId);
 
-        return updated ? NoContent() : NotFound($"Budget with ID {id} not found.");
+        return updated ? ok(updated) : NotFound($"Budget with ID {id} not found.");
     }
 
     // DELETE budget

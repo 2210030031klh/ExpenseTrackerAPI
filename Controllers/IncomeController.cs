@@ -16,7 +16,7 @@ public class IncomeController(IIncomeService incomeService) : ControllerBase
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
         if (string.IsNullOrEmpty(userIdClaim))
-            throw new UnauthorizedAccessException("User ID not found in token.");
+            throw new Exception("User ID not found in token.");
 
         return Guid.Parse(userIdClaim);
     }
@@ -30,17 +30,9 @@ public class IncomeController(IIncomeService incomeService) : ControllerBase
             var incomes = await incomeService.GetAllIncomesAsync(userId);
             return Ok(incomes);
         }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
         catch (Exception ex)
         {
-            return StatusCode(500, new { message = ex.Message });
+            return BadRequest(new { message = ex.Message });
         }
     }
 
@@ -51,27 +43,16 @@ public class IncomeController(IIncomeService incomeService) : ControllerBase
         {
             var userId = GetUserId();
             var created = await incomeService.AddIncomeAsync(income, userId);
+
             return Ok(new
             {
                 message = "Income added successfully",
                 data = created
             });
         }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
-        catch (ArgumentNullException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
         catch (Exception ex)
         {
-            return StatusCode(500, new { message = ex.Message });
+            return BadRequest(new { message = ex.Message });
         }
     }
 
@@ -88,21 +69,9 @@ public class IncomeController(IIncomeService incomeService) : ControllerBase
 
             return Ok(new { message = "Income updated successfully" });
         }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
-        catch (ArgumentNullException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
         catch (Exception ex)
         {
-            return StatusCode(500, new { message = ex.Message });
+            return BadRequest(new { message = ex.Message });
         }
     }
 
@@ -119,17 +88,9 @@ public class IncomeController(IIncomeService incomeService) : ControllerBase
 
             return Ok(new { message = "Income deleted successfully" });
         }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
         catch (Exception ex)
         {
-            return StatusCode(500, new { message = ex.Message });
+            return BadRequest(new { message = ex.Message });
         }
     }
 
@@ -142,17 +103,9 @@ public class IncomeController(IIncomeService incomeService) : ControllerBase
             var incomes = await incomeService.GetIncomesBySourceAsync(source, userId);
             return Ok(incomes);
         }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
         catch (Exception ex)
         {
-            return StatusCode(500, new { message = ex.Message });
+            return BadRequest(new { message = ex.Message });
         }
     }
 
@@ -167,17 +120,9 @@ public class IncomeController(IIncomeService incomeService) : ControllerBase
             var incomes = await incomeService.GetIncomesByDateRangeAsync(startDate, endDate, userId);
             return Ok(incomes);
         }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
         catch (Exception ex)
         {
-            return StatusCode(500, new { message = ex.Message });
+            return BadRequest(new { message = ex.Message });
         }
     }
 
@@ -190,17 +135,9 @@ public class IncomeController(IIncomeService incomeService) : ControllerBase
             var result = await incomeService.GetIncomeSummaryAsync(userId);
             return Ok(result);
         }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
         catch (Exception ex)
         {
-            return StatusCode(500, new { message = ex.Message });
+            return BadRequest(new { message = ex.Message });
         }
     }
 }
