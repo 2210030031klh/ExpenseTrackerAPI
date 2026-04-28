@@ -14,6 +14,7 @@ namespace ExpenseApi.Service;
 
 public class AuthService(IAuthRepository authRepository, IConfiguration configuration) : IAuthService
 {
+    //register new user with username, email , passweord
     public async Task<RegisterResponseDto?> RegisterAsync(UserDto request)
     {
         if (string.IsNullOrWhiteSpace(request.Username))
@@ -62,7 +63,7 @@ public class AuthService(IAuthRepository authRepository, IConfiguration configur
             CreatedAt = user.CreatedAt
         };
     }
-
+    //logs in user, creates otp then calls sendotpemail
     public async Task<bool> LoginAsync(LoginDto request)
     {
         if (string.IsNullOrWhiteSpace(request.Username))
@@ -91,7 +92,7 @@ public class AuthService(IAuthRepository authRepository, IConfiguration configur
 
         return true;
     }
-
+    //login calls this mehtos, to send otp thorugh smtp
     private async Task SendOtpEmail(string toEmail, string otp)
     {
         using var message = new MailMessage();
@@ -111,7 +112,7 @@ public class AuthService(IAuthRepository authRepository, IConfiguration configur
 
         await smtp.SendMailAsync(message);
     }
-
+    //used to verify otp, if valid creates access and refresh token and return to user
     public async Task<TokenResponseDto?> VerifyOtpAsync(VerifyOtpDto request)
     {
         if (string.IsNullOrWhiteSpace(request.Username))
@@ -140,6 +141,7 @@ public class AuthService(IAuthRepository authRepository, IConfiguration configur
     {
         return new TokenResponseDto
         {
+            UserId = user.UserId,
             AccessToken = CreateToken(user),
             RefreshToken = await GenerateAndSaveRefreshTokenAsync(user)
         };
@@ -162,6 +164,7 @@ public class AuthService(IAuthRepository authRepository, IConfiguration configur
         await authRepository.SaveChangesAsync();
         return refreshToken;
     }
+    //creates JWT using claims, issuer, ausience, key
 
     private string CreateToken(User user)
     {
@@ -173,15 +176,17 @@ public class AuthService(IAuthRepository authRepository, IConfiguration configur
         };
 
         var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(configuration.GetValue<string>("AppSettings:Token")!));
+            Encoding.UTF8.GetBytes(configuration["Jwt:Key"]!));
 
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512);
 
+
         var tokenDescriptor = new JwtSecurityToken(
-            issuer: configuration.GetValue<string>("AppSettings:Issuer"),
-            audience: configuration.GetValue<string>("AppSettings:Audience"),
+            issuer: configuration["Jwt:Issuer"],
+            audience: configuration["Jwt:Audience"],
             claims: claims,
-            expires: DateTime.UtcNow.AddDays(1),
+            expires: DateTime.UtcNow.AddMinutes(
+                Convert.ToDouble(configuration["Jwt:ExpiryInMinutes"])),
             signingCredentials: creds
         );
 
@@ -197,7 +202,7 @@ public class AuthService(IAuthRepository authRepository, IConfiguration configur
 
         return await CreateTokenResponse(user);
     }
-
+        //gets emai from user, then generates otp then calls smtp sendforgotpasswordotp to mail
     public async Task<bool> ForgotPasswordAsync(ForgotPasswordDto request)
     {
         if (string.IsNullOrWhiteSpace(request.Email))
@@ -220,7 +225,7 @@ public class AuthService(IAuthRepository authRepository, IConfiguration configur
 
         return true;
     }
-
+    //verify otp and update password
     public async Task<bool> ResetPasswordAsync(ResetPasswordDto request)
     {
         if (string.IsNullOrWhiteSpace(request.Email))
@@ -255,7 +260,7 @@ public class AuthService(IAuthRepository authRepository, IConfiguration configur
 
         return true;
     }
-
+    //send otp
     private async Task SendForgotPasswordOtpEmail(string toEmail, string otp)
     {
         using var message = new MailMessage();
@@ -275,7 +280,7 @@ public class AuthService(IAuthRepository authRepository, IConfiguration configur
 
         await smtp.SendMailAsync(message);
     }
-
+      //if user loged in then take curent password and let him change passs
     public async Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordDto request)
     {
         if (string.IsNullOrWhiteSpace(request.CurrentPassword))

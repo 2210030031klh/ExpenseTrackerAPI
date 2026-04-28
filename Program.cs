@@ -40,12 +40,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
-        ValidIssuer = builder.Configuration["AppSettings:Issuer"],
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidateAudience = true,
-        ValidAudience = builder.Configuration["AppSettings:Audience"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
         ValidateLifetime = true,
         IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["AppSettings:Token"]!)),
+            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+
         ValidateIssuerSigningKey = true
     };
 });
@@ -83,3 +84,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
+
+// "ConnectionStrings": {
+//   "DefaultConnection": "Server=(localdb)\\MSSQLLocalDB;Database=Expenses;Trusted_Connection=True;TrustServerCertificate=True;"
+// },
